@@ -1,0 +1,1245 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Buku Panduan - Sistem Administrasi Sekolah SMA Annajah</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+  
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    color: #1e293b;
+    background: #f8fafc;
+    line-height: 1.7;
+  }
+
+  /* Cover Page */    .cover {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #166534 0%, #15803d 30%, #16a34a 70%, #22c55e 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 40px;
+    position: relative;
+    overflow: hidden;
+    page-break-after: always;
+  }
+
+  .cover::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 70%);
+    animation: none;
+  }
+
+  .cover-content {
+    position: relative;
+    z-index: 1;
+    max-width: 700px;
+  }
+
+  .cover .school-icon {
+    font-size: 80px;
+    margin-bottom: 30px;
+    background: rgba(255,255,255,0.15);
+    width: 140px;
+    height: 140px;
+    line-height: 140px;
+    border-radius: 30px;
+    display: inline-block;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+  }
+
+  .cover h1 {
+    color: #fff;
+    font-size: 48px;
+    font-weight: 800;
+    margin-bottom: 15px;
+    letter-spacing: -1px;
+  }
+
+  .cover .subtitle {
+    color: rgba(255,255,255,0.9);
+    font-size: 22px;
+    font-weight: 400;
+    margin-bottom: 10px;
+  }
+
+  .cover .version {
+    color: rgba(255,255,255,0.6);
+    font-size: 14px;
+    margin-top: 40px;
+    border-top: 1px solid rgba(255,255,255,0.15);
+    padding-top: 30px;
+  }
+
+  .cover .decoration {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin: 25px 0;
+  }
+  .cover .decoration span {
+    width: 8px;
+    height: 8px;
+    background: rgba(255,255,255,0.4);
+    border-radius: 50%;
+  }
+
+  /* Content */
+  .page {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 60px 40px;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  }
+
+  .page-header {
+    text-align: center;
+    margin-bottom: 50px;
+    padding-bottom: 30px;
+    border-bottom: 3px solid #16a34a;
+  }
+
+  .page-header h2 {
+    font-size: 28px;
+    color: #166534;
+    font-weight: 700;
+  }
+
+  .page-header p {
+    color: #64748b;
+    font-size: 14px;
+    margin-top: 5px;
+  }
+
+  h2 { font-size: 24px; color: #166534; margin-top: 50px; margin-bottom: 20px; font-weight: 700; }
+  h3 { font-size: 18px; color: #1e293b; margin-top: 30px; margin-bottom: 12px; font-weight: 600; }
+  h4 { font-size: 15px; color: #334155; margin-top: 20px; margin-bottom: 8px; font-weight: 600; }
+
+  p { margin-bottom: 15px; color: #475569; font-size: 15px; }
+
+  ul, ol { margin: 10px 0 20px 25px; }
+  li { margin-bottom: 8px; color: #475569; font-size: 14px; line-height: 1.6; }
+
+  /* Info Boxes */
+  .info-box {
+    background: #f0fdf4;
+    border-left: 4px solid #16a34a;
+    padding: 15px 20px;
+    margin: 20px 0;
+    border-radius: 0 8px 8px 0;
+  }
+  .info-box.warning {
+    background: #fffbeb;
+    border-left-color: #f59e0b;
+  }
+  .info-box.danger {
+    background: #fef2f2;
+    border-left-color: #ef4444;
+  }
+  .info-box.tip {
+    background: #eff6ff;
+    border-left-color: #3b82f6;
+  }
+  .info-box p { margin: 0; font-size: 14px; }
+  .info-box strong { color: inherit; }
+
+  /* Tables */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+    font-size: 14px;
+  }
+  table th, table td {
+    border: 1px solid #e2e8f0;
+    padding: 10px 14px;
+    text-align: left;
+  }
+  table th {
+    background: #f0fdf4;
+    color: #166534;
+    font-weight: 600;
+    font-size: 13px;
+  }
+  table tr:nth-child(even) { background: #fafafa; }
+  table tr:hover { background: #f0fdf4; }
+
+  /* Code / Keyboard */
+  code {
+    background: #f1f5f9;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-size: 13px;
+    color: #dc2626;
+    font-family: 'Consolas', 'Courier New', monospace;
+  }
+  kbd {
+    background: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-family: 'Consolas', monospace;
+    box-shadow: 0 1px 0 #cbd5e1;
+  }
+
+  /* Images / Screenshots Placeholder */
+  .screenshot {
+    background: #f8fafc;
+    border: 2px dashed #cbd5e1;
+    border-radius: 12px;
+    padding: 40px 20px;
+    text-align: center;
+    margin: 20px 0;
+    color: #94a3b8;
+    font-size: 14px;
+  }
+  .screenshot .icon { font-size: 40px; display: block; margin-bottom: 10px; }
+
+  /* Steps */
+  .step {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 15px;
+    padding: 15px;
+    background: #f8fafc;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+  }
+  .step-num {
+    width: 32px;
+    height: 32px;
+    background: #16a34a;
+    color: #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+  .step-content { flex: 1; }
+  .step-content p { margin: 0; font-size: 14px; }
+
+  /* TOC */
+  .toc { margin: 30px 0; }
+  .toc-item {
+    display: flex;
+    gap: 15px;
+    padding: 10px 0;
+    border-bottom: 1px solid #f1f5f9;
+    text-decoration: none;
+    color: #475569;
+    font-size: 14px;
+  }
+  .toc-item:hover { color: #16a34a; }
+  .toc-num { color: #16a34a; font-weight: 600; min-width: 35px; }
+
+  /* Badge */
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .badge-green { background: #dcfce7; color: #166534; }
+  .badge-blue { background: #dbeafe; color: #1e40af; }
+  .badge-yellow { background: #fef3c7; color: #92400e; }
+  .badge-red { background: #fee2e2; color: #991b1b; }
+
+  /* Table of contents section */
+  .toc-section {
+    background: #f8fafc;
+    border-radius: 12px;
+    padding: 20px;
+    margin: 30px 0;
+  }
+
+  .toc-section h3 {
+    margin-top: 0;
+    color: #166534;
+  }
+
+  .toc-section ol {
+    margin: 10px 0 0 20px;
+  }
+
+  .toc-section ol li {
+    padding: 5px 0;
+    border-bottom: 1px solid #e2e8f0;
+    font-size: 14px;
+  }
+
+  .toc-section ol li:last-child { border-bottom: none; }
+
+  /* Page numbers for print */
+  @page {
+    margin: 2cm 1.5cm;
+    @bottom-center {
+      content: counter(page);
+      font-size: 10px;
+      color: #94a3b8;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+    }
+  }
+
+  /* Print */
+  @media print {
+    body { background: #fff; }
+    .page { box-shadow: none; padding: 0; margin: 0; max-width: none; page-break-inside: avoid; }
+    .page-header { page-break-after: avoid; }
+    .cover { min-height: 100vh; }
+    .step { page-break-inside: avoid; }
+    table { page-break-inside: auto; }
+    tr { page-break-inside: avoid; }
+    h2 { page-break-after: avoid; }
+    h3 { page-break-after: avoid; }
+  }
+
+  /* Tables for feature comparison */
+  .feature-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin: 20px 0;
+  }
+  .feature-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 18px;
+  }
+  .feature-card h4 { margin: 0 0 8px 0; font-size: 14px; }
+  .feature-card p { margin: 0; font-size: 13px; color: #64748b; }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .page { padding: 30px 20px; }
+    .cover h1 { font-size: 32px; }
+    .feature-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ==================== COVER ==================== -->
+<div class="cover">
+  <div class="cover-content">
+    <div class="school-icon">🏫</div>
+    <h1>BUKU PANDUAN</h1>
+    <p class="subtitle">Sistem Administrasi Sekolah SMA Annajah</p>
+    <div class="decoration">
+      <span></span><span></span><span></span>
+      <span></span><span></span><span></span>
+    </div>
+    <p class="version">
+      Versi 1.0 &mdash; 2025<br>
+      SMA Annajah
+    </p>
+  </div>
+</div>
+
+<!-- ==================== HALAMAN 1 - KATA PENGANTAR ==================== -->
+<div class="page">
+  <div class="page-header">
+    <h2>Kata Pengantar</h2>
+  </div>
+
+  <p>Assalamu'alaikum Warahmatullahi Wabarakatuh,</p>
+
+  <p>Puji syukur ke hadirat Allah SWT atas limpahan rahmat dan karunia-Nya sehingga Buku Panduan Sistem Administrasi Sekolah SMA Annajah ini dapat diselesaikan dengan baik.</p>
+
+  <p>Aplikasi <strong>Sistem Administrasi Sekolah SMA Annajah</strong> dibangun untuk memudahkan pengelolaan administrasi keuangan sekolah, khususnya dalam pencatatan dan pelaporan pembayaran siswa. Dengan aplikasi berbasis web ini, proses pencatatan pembayaran SPP, biaya gedung, ujian, buku, dan berbagai jenis pembayaran lainnya menjadi lebih cepat, akurat, dan terorganisir.</p>
+
+  <p>Buku panduan ini disusun sebagai acuan bagi seluruh pengguna aplikasi, baik Admin maupun Bendahara, dalam mengoperasikan setiap fitur yang tersedia. Kami berharap buku ini dapat membantu pengguna dalam memanfaatkan aplikasi secara optimal.</p>
+
+  <p>Kami menyadari bahwa buku panduan ini masih jauh dari sempurna. Oleh karena itu, kritik dan saran yang membangun sangat kami harapkan untuk perbaikan di masa mendatang.</p>
+
+  <p>Wassalamu'alaikum Warahmatullahi Wabarakatuh.</p>
+
+  <br>
+  <p style="text-align: right;"><strong>Tim Pengembang</strong><br>SMA Annajah</p>
+
+  <div style="page-break-before: always;"></div>
+
+  <!-- ==================== DAFTAR ISI ==================== -->
+  <div class="page-header">
+    <h2>Daftar Isi</h2>
+  </div>
+
+  <div class="toc-section">
+    <ol>
+      <li><strong>Pendahuluan</strong> &mdash; Tentang Aplikasi, Persyaratan Sistem</li>
+      <li><strong>Instalasi &amp; Konfigurasi</strong> &mdash; Cara Install dan Menjalankan Aplikasi</li>
+      <li><strong>Login &amp; Autentikasi</strong> &mdash; Masuk ke Aplikasi, Akun Pengguna</li>
+      <li><strong>Dashboard</strong> &mdash; Ringkasan Data dan Statistik</li>
+      <li><strong>Manajemen Kelas</strong> &mdash; Mengelola Data Kelas</li>
+      <li><strong>Manajemen Siswa</strong> &mdash; Mengelola Data Siswa</li>
+      <li><strong>Jenis Pembayaran</strong> &mdash; Mengatur Jenis dan Nominal Pembayaran</li>
+      <li><strong>Transaksi Pembayaran</strong> &mdash; Mencatat Pembayaran, Kwitansi, Cek SPP</li>
+      <li><strong>Laporan &amp; Export</strong> &mdash; Rekap, Grafik, Export Excel &amp; PDF</li>
+      <li><strong>Pengaturan Akun</strong> &mdash; Ubah Password</li>
+      <li><strong>Pemecahan Masalah</strong> &mdash; Troubleshooting Umum</li>
+    </ol>
+  </div>
+</div>
+
+<!-- ==================== BAB 1: PENDAHULUAN ==================== -->
+<div class="page">
+  <div class="page-header">
+    <h2>Bab 1 &mdash; Pendahuluan</h2>
+    <p>Mengenal Sistem Administrasi Sekolah SMA Annajah</p>
+  </div>
+
+  <h3>1.1 Tentang Aplikasi</h3>
+  <p><strong>Sistem Administrasi Sekolah SMA Annajah</strong> adalah aplikasi berbasis web yang dirancang khusus untuk mengelola seluruh proses pembayaran di lingkungan SMA Annajah. Aplikasi ini menangani mulai dari pencatatan data siswa, pengaturan jenis pembayaran, transaksi harian, hingga pembuatan laporan keuangan.</p>
+
+  <h3>1.2 Fitur Unggulan</h3>
+  <div class="feature-grid">
+    <div class="feature-card">
+      <h4>🔐 Autentikasi Multi-User</h4>
+      <p>Login aman dengan dua level akses: Admin dan Bendahara.</p>
+    </div>
+    <div class="feature-card">
+      <h4>📊 Dashboard Real-time</h4>
+      <p>Lihat ringkasan data pembayaran terkini dalam satu halaman.</p>
+    </div>
+    <div class="feature-card">
+      <h4>💳 Manajemen Pembayaran</h4>
+      <p>Atur berbagai jenis pembayaran: SPP, gedung, ujian, buku, dan lainnya.</p>
+    </div>
+    <div class="feature-card">
+      <h4>📄 Kwitansi PDF Otomatis</h4>
+      <p>Cetak kwitansi format A5 landscape untuk setiap transaksi.</p>
+    </div>
+    <div class="feature-card">
+      <h4>📈 Laporan &amp; Grafik</h4>
+      <p>Rekap keuangan, grafik bulanan, distribusi pembayaran (Pie Chart &amp; Bar Chart).</p>
+    </div>
+    <div class="feature-card">
+      <h4>📊 Export Excel</h4>
+      <p>Download laporan ke Excel dengan format rapi dan Grand Total.</p>
+    </div>
+  </div>
+
+  <h3>1.3 Persyaratan Sistem</h3>
+  <table>
+    <tr><th>Komponen</th><th>Kebutuhan</th></tr>
+    <tr><td>Sistem Operasi</td><td>Windows 10 / 11, macOS, Linux</td></tr>
+    <tr><td>Node.js</td><td>Versi 18 atau lebih baru</td></tr>
+    <tr><td>NPM</td><td>Versi 9 atau lebih baru</td></tr>
+    <tr><td>Browser</td><td>Chrome, Firefox, Edge (versi terbaru)</td></tr>
+    <tr><td>RAM (server)</td><td>Minimal 512 MB (direkomendasikan 1 GB)</td></tr>
+    <tr><td>Penyimpanan</td><td>Minimal 100 MB untuk aplikasi + database</td></tr>
+  </table>
+
+  <h3>1.4 Teknologi yang Digunakan</h3>
+  <table>
+    <tr><th>Lapisan</th><th>Teknologi</th></tr>
+    <tr><td>Backend</td><td>Node.js + Express.js</td></tr>
+    <tr><td>Database</td><td>SQLite (better-sqlite3)</td></tr>
+    <tr><td>Frontend</td><td>React 18 + Vite</td></tr>
+    <tr><td>UI Framework</td><td>Tailwind CSS</td></tr>
+    <tr><td>Autentikasi</td><td>JWT (JSON Web Token)</td></tr>
+    <tr><td>PDF</td><td>PDFKit</td></tr>
+    <tr><td>Excel</td><td>ExcelJS</td></tr>
+    <tr><td>Grafik</td><td>Recharts</td></tr>
+  </table>
+
+  <div class="info-box tip">
+    <p><strong>💡 Catatan:</strong> Aplikasi ini menggunakan SQLite, sehingga <strong>tidak memerlukan MySQL atau database server</strong>. Semua data tersimpan dalam satu file <code>sma_annajah.db</code>.</p>
+  </div>
+</div>
+
+<!-- ==================== BAB 2: INSTALASI ==================== -->
+<div class="page">
+  <div class="page-header">
+    <h2>Bab 2 &mdash; Instalasi &amp; Konfigurasi</h2>
+    <p>Cara install dan menjalankan aplikasi</p>
+  </div>
+
+  <h3>2.1 Persiapan</h3>
+  <p>Pastikan <strong>Node.js</strong> sudah terinstall di komputer. Cek dengan membuka Command Prompt (CMD) dan ketik:</p>
+  <div class="info-box">
+    <p><code>node --version</code> &rarr; Harus menampilkan versi 18+<br>
+    <code>npm --version</code> &rarr; Harus menampilkan versi 9+</p>
+  </div>
+
+  <h3>2.2 Instalasi Dependencies</h3>
+  <p>Buka folder project dan jalankan perintah berikut:</p>
+
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <p><strong>Buka folder project</strong><br>
+      <code>cd "D:\Aplikasi\Annajah\sma-annajah-payment\backend"</code></p>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <p><strong>Install backend dependencies</strong><br>
+      <code>npm install</code></p>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <p><strong>Jalankan backend server</strong><br>
+      <code>npm start</code><br>
+      Server akan berjalan di <code>http://localhost:5000</code></p>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">4</div>
+    <div class="step-content">
+      <p><strong>Buka CMD baru, install frontend</strong><br>
+      <code>cd "D:\Aplikasi\Annajah\sma-annajah-payment\frontend"</code><br>
+      <code>npm install</code></p>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">5</div>
+    <div class="step-content">
+      <p><strong>Jalankan frontend</strong><br>
+      <code>npm run dev</code><br>
+      Aplikasi bisa diakses di <code>http://localhost:3000</code></p>
+    </div>
+  </div>
+
+  <div class="info-box warning">
+    <p><strong>⚠️ Penting:</strong> Backend harus berjalan <strong>sebelum</strong> frontend. Jangan tutup jendela CMD backend saat menggunakan aplikasi.</p>
+  </div>
+
+  <h3>2.3 Cara Alternatif (Double Click)</h3>
+  <p>Buka File Explorer ke folder <code>D:\Aplikasi\Annajah\sma-annajah-payment\</code> lalu double-click file <strong>install-and-run.bat</strong>. Script akan otomatis:</p>
+  <ol>
+    <li>Install semua dependencies backend &amp; frontend</li>
+    <li>Menjalankan backend di <code>http://localhost:5000</code></li>
+    <li>Menjalankan frontend di <code>http://localhost:3000</code></li>
+  </ol>
+
+  <h3>2.4 Build untuk Production</h3>
+  <p>Jika ingin langsung mengakses dari <code>http://localhost:5000</code> (tanpa perlu frontend terpisah):</p>
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <p><strong>Build frontend</strong><br>
+      <code>cd frontend &amp;&amp; npm run build</code></p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <p><strong>Jalankan backend</strong><br>
+      <code>cd backend &amp;&amp; npm start</code><br>
+      Akses di <code>http://localhost:5000</code></p>
+    </div>
+  </div>
+
+  <div class="info-box tip">
+    <p><strong>💡 Database:</strong> File database <code>sma_annajah.db</code> akan otomatis dibuat di folder <code>backend/</code> saat pertama kali server dijalankan. Data sampel (kelas, siswa, jenis pembayaran) akan otomatis terisi.</p>
+  </div>
+</div>
+
+<!-- ==================== BAB 3: LOGIN ==================== -->
+<div class="page">
+  <div class="page-header">
+    <h2>Bab 3 &mdash; Login &amp; Autentikasi</h2>
+    <p>Masuk ke aplikasi dan mengenal akun pengguna</p>
+  </div>
+
+  <h3>3.1 Halaman Login</h3>
+  <p>Saat pertama kali membuka aplikasi, Anda akan diarahkan ke halaman login. Tampilan login memiliki:</p>
+  <ul>
+    <li>Logo SMA Annajah dengan background gradasi hijau</li>
+    <li>Form input <strong>Username</strong> dan <strong>Password</strong></li>
+    <li>Tombol <strong>"Masuk"</strong> untuk login</li>
+    <li>Informasi akun demo di bagian bawah form</li>
+  </ul>
+
+  <h3>3.2 Akun Demo</h3>
+  <table>
+    <tr><th>Role</th><th>Username</th><th>Password</th><th>Hak Akses</th></tr>
+    <tr>
+      <td><span class="badge badge-green">Admin</span></td>
+      <td><code>admin</code></td>
+      <td><code>admin123</code></td>
+      <td>Akses penuh ke semua fitur</td>
+    </tr>
+    <tr>
+      <td><span class="badge badge-blue">Bendahara</span></td>
+      <td><code>bendahara</code></td>
+      <td><code>bendahara123</code></td>
+      <td>Transaksi, laporan, data siswa &amp; kelas</td>
+    </tr>
+  </table>
+
+  <h3>3.3 Cara Login</h3>
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <p>Buka browser dan akses <code>http://localhost:3000</code> (atau <code>http://localhost:5000</code> jika sudah di-build)</p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <p>Masukkan <strong>Username</strong> (contoh: <code>admin</code>) dan <strong>Password</strong> (contoh: <code>admin123</code>)</p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <p>Klik tombol <strong>"Masuk"</strong></p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">4</div>
+    <div class="step-content">
+      <p>Setelah berhasil, Anda akan diarahkan ke halaman <strong>Dashboard</strong></p>
+    </div>
+  </div>
+
+  <div class="info-box warning">
+    <p><strong>⚠️ Jika login gagal:</strong> Pastikan username dan password benar. Password bersifat case-sensitive (huruf besar/kecil berpengaruh).</p>
+  </div>
+
+  <h3>3.4 Logout</h3>
+  <p>Untuk keluar dari aplikasi, klik tombol <strong>"Keluar"</strong> yang berada di bagian bawah sidebar (menu samping kiri). Anda akan dikembalikan ke halaman login.</p>
+
+  <h3>3.5 Sesi Login</h3>
+  <p>Sesi login akan berlangsung selama token JWT masih valid. Jika token kedaluwarsa atau terjadi error autentikasi (401/403), Anda akan otomatis dialihkan ke halaman login. Data login disimpan di penyimpanan lokal browser (<code>localStorage</code>).</p>
+</div>
+
+<!-- ==================== BAB 4: DASHBOARD ==================== -->
+<div class="page">
+  <div class="page-header">
+    <h2>Bab 4 &mdash; Dashboard</h2>
+    <p>Ringkasan data dan statistik pembayaran</p>
+  </div>
+
+  <h3>4.1 Tampilan Dashboard</h3>
+  <p><strong>Dashboard</strong> adalah halaman utama setelah login. Halaman ini menampilkan ringkasan data pembayaran secara <em>real-time</em> dalam bentuk:</p>
+
+  <h3>4.2 Kartu Statistik</h3>
+  <table>
+    <tr><th>Kartu</th><th>Deskripsi</th><th>Warna</th></tr>
+    <tr><td>👥 Siswa Aktif</td><td>Jumlah siswa dengan status aktif</td><td><span class="badge badge-blue">Biru</span></td></tr>
+    <tr><td>📅 Pembayaran Hari Ini</td><td>Jumlah transaksi dan total nominal hari ini</td><td><span class="badge badge-green">Hijau</span></td></tr>
+    <tr><td>📈 Pembayaran Bulan Ini</td><td>Jumlah transaksi dan total nominal bulan berjalan</td><td><span class="badge badge-yellow">Ungu</span></td></tr>
+    <tr><td>💰 Total Semua</td><td>Akumulasi seluruh transaksi yang pernah tercatat</td><td><span class="badge badge-yellow">Kuning</span></td></tr>
+  </table>
+
+  <h3>4.3 Grafik &amp; Transaksi Terbaru</h3>
+  <ul>
+    <li><strong>Pembayaran Bulan Ini:</strong> Menampilkan visualisasi pembayaran (akan aktif setelah ada data transaksi)</li>
+    <li><strong>Transaksi Terbaru:</strong> Daftar 5 transaksi terakhir yang tercatat, menampilkan nama siswa, jenis pembayaran, tanggal, dan jumlah</li>
+    <li><strong>Status SPP Bulan Ini:</strong> Menampilkan jumlah siswa yang sudah membayar SPP bulan berjalan dari total siswa aktif</li>
+  </ul>
+
+  <h3>4.4 Memuat Ulang Dashboard</h3>
+  <p>Dashboard akan otomatis memuat ulang setiap kali halaman diakses. Untuk me-refresh data, cukup navigasi ke menu lain lalu kembali ke Dashboard, atau refresh halaman browser (<kbd>F5</kbd>).</p>
+</div>
+
+<!-- ==================== BAB 5: KELAS ==================== -->
+<div class="page">
+  <div class="page-header">
+    <h2>Bab 5 &mdash; Manajemen Kelas</h2>
+    <p>Mengelola data kelas siswa</p>
+  </div>
+
+  <h3>5.1 Tentang Halaman Kelas</h3>
+  <p>Halaman <strong>Kelas</strong> digunakan untuk mengelola data kelas. Kelas dikelompokkan berdasarkan tingkat: <strong>Kelas X</strong> (tingkat 10), <strong>Kelas XI</strong> (tingkat 11), dan <strong>Kelas XII</strong> (tingkat 12).</p>
+
+  <div class="info-box tip">
+    <p><strong>💡 Data Awal:</strong> Saat pertama kali aplikasi dijalankan, 9 kelas sampel sudah otomatis terisi (X-A, X-B, X-C, XI-A, XI-B, XI-C, XII-A, XII-B, XII-C).</p>
+  </div>
+
+  <h3>5.2 Menambah Kelas Baru</h3>
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <p>Klik tombol <strong>"Tambah Kelas"</strong> di pojok kanan atas</p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <p>Isi <strong>Nama Kelas</strong> (contoh: <code>X-A</code>, <code>XI-B</code>, <code>XII-C</code>)</p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <p>Pilih <strong>Tingkat</strong>: Kelas X (10), Kelas XI (11), atau Kelas XII (12)</p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">4</div>
+    <div class="step-content">
+      <p>Klik <strong>"Tambah"</strong> untuk menyimpan</p>
+    </div>
+  </div>
+
+  <h3>5.3 Mengedit Kelas</h3>
+  <p>Arahkan mouse ke kelas yang ingin diedit, lalu klik ikon <strong>✏️ (Edit)</strong> yang muncul. Ubah data yang diperlukan dan klik <strong>"Simpan"</strong>.</p>
+
+  <h3>5.4 Menghapus Kelas</h3>
+  <p>Arahkan mouse ke kelas yang ingin dihapus, lalu klik ikon <strong>🗑️ (Hapus)</strong>.</p>
+
+  <div class="info-box danger">
+    <p><strong>🚫 Tidak bisa hapus:</strong> Kelas yang masih memiliki siswa <strong>tidak dapat dihapus</strong>. Pindahkan siswa ke kelas lain terlebih dahulu, atau hapus siswa dari kelas tersebut.</p>
+  </div>
+</div>
+
+<!-- ==================== BAB 6: SISWA ==================== -->
+<div class="page">
+  <div class="page-header">
+    <h2>Bab 6 &mdash; Manajemen Siswa</h2>
+    <p>Mengelola data siswa</p>
+  </div>
+
+  <h3>6.1 Tentang Halaman Siswa</h3>
+  <p>Halaman <strong>Data Siswa</strong> digunakan untuk mengelola seluruh data siswa SMA Annajah. Data siswa meliputi NIS, NISN, nama, jenis kelamin, kelas, tempat/tanggal lahir, alamat, dan nomor telepon.</p>
+
+  <h3>6.2 Menambah Siswa Baru</h3>
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <p>Klik tombol <strong>"Tambah Siswa"</strong> di pojok kanan atas</p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <p>Isi data siswa pada form yang muncul. Field bertanda <strong>*</strong> wajib diisi (NIS dan Nama)</p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <p>Pilih <strong>Kelas</strong> untuk menempatkan siswa</p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">4</div>
+    <div class="step-content">
+      <p>Klik <strong>"Tambah Siswa"</strong> untuk menyimpan</p>
+    </div>
+  </div>
+
+  <h3>6.3 Mencari dan Menyaring Data</h3>
+  <p>Halaman Siswa dilengkapi fitur pencarian dan filter:</p>
+  <ul>
+    <li><strong>🔍 Pencarian:</strong> Ketik nama atau NIS siswa di kolom pencarian. Data akan otomatis terfilter secara langsung.</li>
+    <li><strong>🏷️ Filter Kelas:</strong> Pilih kelas tertentu dari dropdown untuk menampilkan siswa dari kelas tersebut saja.</li>
+    <li><strong>🔄 Reset:</strong> Klik tombol "Reset" untuk menghapus semua filter dan pencarian.</li>
+  </ul>
+
+  <h3>6.4 Status Siswa</h3>
+  <table>
+    <tr><th>Status</th><th>Warna Badge</th><th>Keterangan</th></tr>
+    <tr><td><span class="badge badge-green">aktif</span></td><td>Hijau</td><td>Siswa masih aktif bersekolah</td></tr>
+    <tr><td><span class="badge badge-blue">lulus</span></td><td>Biru</td><td>Siswa sudah lulus</td></tr>
+    <tr><td><span class="badge badge-red">keluar</span></td><td>Merah</td><td>Siswa keluar/mengundurkan diri</td></tr>
+  </table>
+
+  <h3>6.5 Mengedit dan Menghapus Siswa</h3>
+  <ul>
+    <li><strong>Edit:</strong> Klik ikon ✏️ pada baris siswa yang ingin diedit</li>
+    <li><strong>Hapus:</strong> Klik ikon 🗑️ untuk menghapus siswa. <strong>Perhatian:</strong> Semua transaksi yang terkait dengan siswa tersebut juga akan ikut terhapus.</li>
+  </ul>
+</div>
+
+<!-- ==================== BAB 7: JENIS PEMBAYARAN ==================== -->
+<div class="page">
+  <div class="page-header">
+    <h2>Bab 7 &mdash; Jenis Pembayaran</h2>
+    <p>Mengatur jenis dan nominal pembayaran</p>
+  </div>
+
+  <h3>7.1 Tentang Halaman Jenis Pembayaran</h3>
+  <p>Halaman <strong>Jenis Pembayaran</strong> digunakan untuk mengelola berbagai jenis pembayaran yang berlaku di sekolah. Setiap jenis pembayaran memiliki nominal, periode, dan tahun ajaran tertentu.</p>
+
+  <h3>7.2 Jenis Pembayaran Default</h3>
+  <p>Saat pertama kali dijalankan, aplikasi menyediakan 6 jenis pembayaran sampel:</p>
+  <table>
+    <tr><th>Jenis Pembayaran</th><th>Nominal</th><th>Periode</th></tr>
+    <tr><td>SPP Bulanan</td><td>Rp 250.000</td><td><span class="badge badge-blue">Bulanan</span></td></tr>
+    <tr><td>Biaya Gedung</td><td>Rp 500.000</td><td><span class="badge badge-red">Sekali</span></td></tr>
+    <tr><td>Biaya Pendaftaran</td><td>Rp 350.000</td><td><span class="badge badge-red">Sekali</span></td></tr>
+    <tr><td>Biaya Ujian</td><td>Rp 200.000</td><td><span class="badge badge-yellow">Semester</span></td></tr>
+    <tr><td>Biaya Buku</td><td>Rp 300.000</td><td><span class="badge badge-green">Tahunan</span></td></tr>
+    <tr><td>Biaya Kegiatan</td><td>Rp 150.000</td><td><span class="badge badge-blue">Bulanan</span></td></tr>
+  </table>
+
+  <h3>7.3 Menambah Jenis Pembayaran</h3>
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <p>Klik tombol <strong>"Tambah Baru"</strong></p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <p>Isi <strong>Nama Pembayaran</strong> (contoh: "SPP Bulanan", "Biaya Praktek")</p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <p>Pilih <strong>Tahun Ajaran</strong> dan <strong>Periode</strong> pembayaran</p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">4</div>
+    <div class="step-content">
+      <p>Masukkan <strong>Nominal</strong> dalam Rupiah (tanpa titik, contoh: <code>250000</code>)</p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">5</div>
+    <div class="step-content">
+      <p>Klik <strong>"Tambah"</strong> untuk menyimpan</p>
+    </div>
+  </div>
+
+  <h3>7.4 Periode Pembayaran</h3>
+  <table>
+    <tr><th>Periode</th><th>Keterangan</th></tr>
+    <tr><td><span class="badge badge-blue">Bulanan</span></td><td>Dibayar setiap bulan (contoh: SPP)</td></tr>
+    <tr><td><span class="badge badge-yellow">Semester</span></td><td>Dibayar per semester (contoh: ujian)</td></tr>
+    <tr><td><span class="badge badge-green">Tahunan</span></td><td>Dibayar sekali setahun (contoh: buku)</td></tr>
+    <tr><td><span class="badge badge-red">Sekali</span></td><td>Dibayar sekali saja (contoh: gedung, pendaftaran)</td></tr>
+  </table>
+
+  <div class="info-box warning">
+    <p><strong>⚠️ Tidak bisa hapus:</strong> Jenis pembayaran yang sudah memiliki transaksi <strong>tidak dapat dihapus</strong>. Hapus transaksi terkait terlebih dahulu.</p>
+  </div>
+</div>
+
+<!-- ==================== BAB 8: TRANSAKSI ==================== -->
+<div class="page">
+  <div class="page-header">
+    <h2>Bab 8 &mdash; Transaksi Pembayaran</h2>
+    <p>Mencatat pembayaran, mencetak kwitansi, dan cek status SPP</p>
+  </div>
+
+  <h3>8.1 Tentang Halaman Transaksi</h3>
+  <p>Halaman <strong>Transaksi Pembayaran</strong> adalah halaman utama untuk mencatat pembayaran yang dilakukan oleh siswa. Setiap transaksi akan menghasilkan nomor kwitansi unik secara otomatis.</p>
+
+  <h3>8.2 Mencatat Pembayaran Baru</h3>
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <p>Klik tombol <strong>"Transaksi Baru"</strong></p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <p><strong>Pilih Siswa</strong> &mdash; Pilih siswa dari dropdown. Setelah memilih siswa, status SPP akan otomatis muncul jika ada.</p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <p><strong>Cek Status SPP</strong> &mdash; Panel hijau akan menampilkan bulan-bulan yang sudah lunas (✅) dan yang belum (❌) untuk pembayaran SPP.</p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">4</div>
+    <div class="step-content">
+      <p>Pilih <strong>Jenis Pembayaran</strong> &mdash; Nominal akan otomatis terisi sesuai jenis yang dipilih</p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">5</div>
+    <div class="step-content">
+      <p>Isi <strong>Jumlah Bayar</strong> (otomatis terisi, bisa diubah jika diperlukan)</p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">6</div>
+    <div class="step-content">
+      <p>Pilih <strong>Bulan Pembayaran</strong> (khusus untuk SPP)</p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">7</div>
+    <div class="step-content">
+      <p>Klik <strong>"Catat Pembayaran"</strong> untuk menyimpan transaksi</p>
+    </div>
+  </div>
+
+  <h3>8.3 Nomor Kwitansi Otomatis</h3>
+  <p>Setiap transaksi akan mendapatkan nomor kwitansi unik dengan format: <code>KWI/YYYYMMDD/XXXX</code></p>
+  <ul>
+    <li><code>KWI</code> &mdash; Prefix kwitansi</li>
+    <li><code>YYYYMMDD</code> &mdash; Tanggal transaksi</li>
+    <li><code>XXXX</code> &mdash; Nomor urut (reset setiap hari)</li>
+  </ul>
+  <p>Contoh: <code>KWI/20250115/0001</code> (kwitansi pertama pada 15 Januari 2025)</p>
+
+  <h3>8.4 Mencari Transaksi</h3>
+  <p>Gunakan kolom pencarian di bagian atas tabel untuk mencari transaksi berdasarkan <strong>nama siswa</strong> atau <strong>NIS</strong>. Data akan terfilter secara otomatis saat Anda mengetik.</p>
+
+  <h3>8.5 Download Kwitansi (PDF)</h3>
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <p>Cari transaksi yang ingin di-download kwitansinya</p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <p>Klik ikon <strong>⬇️ Download</strong> (warna hijau) pada baris transaksi tersebut</p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <p>File PDF akan otomatis ter-download. Kwitansi siap dicetak!</p>
+    </div>
+  </div>
+
+  <h3>8.6 Export Transaksi ke Excel</h3>
+  <p>Di halaman Transaksi, Anda juga bisa mengexport seluruh data transaksi ke Excel. Klik tombol <strong>"Download Excel"</strong> (📊) di pojok kanan atas halaman.</p>
+  <p>File Excel akan berisi semua kolom: nomor kwitansi, tanggal, NIS, nama siswa, jenis pembayaran, bulan, jumlah, dan petugas. Bagian bawah akan menampilkan <strong>Grand Total</strong> dari seluruh transaksi.</p>
+  <p>Fitur ini berguna untuk:</p>
+  <ul>
+    <li>📋 Arsip data transaksi di spreadsheet</li>
+    <li>📊 Analisis lebih lanjut dengan pivot table</li>
+    <li>📎 Lampiran laporan keuangan</li>
+  </ul>
+
+  <h3>8.7 Menghapus Transaksi</h3>
+  <p>Klik ikon 🗑️ (warna merah) pada baris transaksi yang ingin dihapus. Konfirmasi akan muncul sebelum penghapusan dilakukan.</p>
+
+  <h3>8.7 Format Kwitansi</h3>
+  <p>Kwitansi dicetak dalam format <strong>A5 Landscape</strong> dengan informasi:</p>
+  <ul>
+    <li>Kop sekolah (nama SMA Annajah)</li>
+    <li>Nomor kwitansi dan tanggal</li>
+    <li>NIS dan nama siswa</li>
+    <li>Jenis pembayaran, periode, dan bulan</li>
+    <li>Jumlah pembayaran (dalam Rupiah)</li>
+    <li>Terbilang (nominal dalam kata-kata)</li>
+    <li>Tanda tangan penerima dan kepala sekolah</li>
+  </ul>
+</div>
+
+<!-- ==================== BAB 9: LAPORAN ==================== -->
+<div class="page">
+  <div class="page-header">
+    <h2>Bab 9 &mdash; Laporan &amp; Export</h2>
+    <p>Rekap keuangan, grafik, export Excel &amp; cetak</p>
+  </div>
+
+  <h3>9.1 Tentang Halaman Laporan</h3>
+  <p>Halaman <strong>Laporan Keuangan</strong> menyediakan tiga tab laporan yang bisa dipilih: <strong>Rekap Pembayaran</strong>, <strong>Per Bulan</strong>, dan <strong>Per Siswa</strong>.</p>
+
+  <h3>9.2 Tab: Rekap Pembayaran</h3>
+  <p>Menampilkan rekap pembayaran berdasarkan jenis pembayaran, dilengkapi:</p>
+  <ul>
+    <li><strong>Filter Tanggal:</strong> Pilih rentang tanggal untuk melihat data periode tertentu</li>
+    <li><strong>Pie Chart:</strong> Grafik lingkaran distribusi pembayaran per jenis</li>
+    <li><strong>Tabel Detail:</strong> Nama pembayaran, jumlah transaksi, total nominal</li>
+    <li><strong>Grand Total:</strong> Jumlah seluruh pembayaran di periode tersebut</li>
+  </ul>
+
+  <h3>9.3 Tab: Per Bulan</h3>
+  <p>Menampilkan laporan pembayaran per bulan dalam satu tahun ajaran:</p>
+  <ul>
+    <li><strong>Pilih Tahun:</strong> Pilih tahun yang ingin dilihat (2024, 2025, 2026)</li>
+    <li><strong>Bar Chart:</strong> Grafik batang pembayaran per bulan</li>
+    <li><strong>Tabel:</strong> 12 bulan (Jan-Des) dengan jumlah transaksi dan total nominal</li>
+  </ul>
+
+  <h3>9.4 Tab: Per Siswa</h3>
+  <p>Menampilkan riwayat pembayaran siswa tertentu:</p>
+  <ul>
+    <li><strong>Pilih Siswa:</strong> Pilih siswa dari dropdown</li>
+    <li><strong>Riwayat Transaksi:</strong> Tabel tanggal, jenis pembayaran, bulan, jumlah</li>
+    <li><strong>Total:</strong> Akumulasi seluruh pembayaran siswa tersebut</li>
+  </ul>
+
+  <h3>9.5 Cetak Laporan</h3>
+  <p>Klik tombol <strong>"Cetak"</strong> (🖨️) di pojok kanan atas halaman Laporan. Browser akan menampilkan dialog cetak. Anda bisa mencetak ke printer atau menyimpan sebagai PDF.</p>
+
+  <div class="info-box tip">
+    <p><strong>💡 Tips Cetak:</strong> Gunakan fitur cetak browser (<kbd>Ctrl+P</kbd>) untuk hasil terbaik. Atur orientasi menjadi <strong>Landscape</strong> jika tabel terlalu lebar.</p>
+  </div>
+
+  <h3>9.6 Export ke Excel</h3>
+  <p>Setiap tab laporan memiliki tombol <strong>"Download Excel"</strong> dengan ikon <strong>📊</strong>:</p>
+  <table>
+    <tr><th>Tab</th><th>Nama File Excel</th><th>Isi</th></tr>
+    <tr><td>Rekap</td><td><code>rekap_pembayaran.xlsx</code></td><td>Rekap per jenis + Grand Total</td></tr>
+    <tr><td>Per Bulan</td><td><code>pembayaran_2025.xlsx</code></td><td>12 bulan + Total</td></tr>
+    <tr><td>Per Siswa</td><td><code>riwayat_[nama].xlsx</code></td><td>Riwayat transaksi siswa</td></tr>
+    <tr><td>Transaksi *</td><td><code>transaksi.xlsx</code></td><td>Semua transaksi + Grand Total</td></tr>
+  </table>
+  <p><small>* Tombol Export Excel juga tersedia di halaman Transaksi</small></p>
+
+  <p><strong>Fitur Export Excel:</strong></p>
+  <ul>
+    <li>✅ Header dengan background hijau dan font putih</li>
+    <li>✅ Zebra striping (baris genap hijau muda)</li>
+    <li>✅ Border rapi pada setiap sel</li>
+    <li>✅ Baris Grand Total / Total di bagian bawah</li>
+  </ul>
+
+  <h3>9.7 Export dari Halaman Transaksi</h3>
+  <p>Di halaman <strong>Transaksi Pembayaran</strong>, klik tombol <strong>"Download Excel"</strong> untuk mengexport seluruh data transaksi beserta nomor kwitansi, NIS, nama siswa, jenis pembayaran, jumlah, dan petugas.</p>
+</div>
+
+<!-- ==================== BAB 10: AKUN ==================== -->
+<div class="page">
+  <div class="page-header">
+    <h2>Bab 10 &mdash; Pengaturan Akun &amp; Tampilan</h2>
+    <p>Mengelola akun dan navigasi aplikasi</p>
+  </div>
+
+  <h3>10.1 Mengubah Password</h3>
+  <p>Saat ini, fitur ubah password tersedia melalui API:</p>
+
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <p>Klik menu <strong>Dashboard</strong> untuk memastikan Anda sudah login</p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <p>Untuk mengubah password, gunakan endpoint API:<br>
+      <code>PUT /api/auth/ubah-password</code><br>
+      Body: <code>{ "password_lama": "admin123", "password_baru": "passwordbaru" }</code></p>
+    </div>
+  </div>
+
+  <div class="info-box warning">
+    <p><strong>⚠️ Catatan:</strong> Fitur ubah password dari antarmuka pengguna (frontend) dapat ditambahkan jika diperlukan. Saat ini tersedia melalui API.</p>
+  </div>
+
+  <h3>10.2 Informasi Pengguna</h3>
+  <p>Sidebar menampilkan informasi pengguna yang sedang login, meliputi:</p>
+  <ul>
+    <li><strong>Nama lengkap</strong> pengguna</li>
+    <li><strong>Role</strong> (Admin / Bendahara)</li>
+  </ul>
+
+  <h3>10.2 Tombol Collapse Sidebar</h3>
+  <p>Sidebar dapat dikecilkan (collapse) untuk memberikan lebih banyak ruang ke konten utama. Klik tombol kecil di antara sidebar dan konten (ikon <strong>&lt;</strong> atau <strong>☰</strong>) untuk toggle tampilan sidebar.</p>
+  <p>Saat sidebar dikecilkan, hanya ikon menu yang terlihat. Arahkan mouse (hover) untuk melihat tooltip nama menu.</p>
+
+  <h3>10.3 Fitur yang Akan Datang</h3>
+  <p>Berikut fitur yang sedang dalam pengembangan dan akan tersedia di versi mendatang:</p>
+  <ul>
+    <li><strong>🔄 Ubah Password dari UI</strong> &mdash; Form ubah password akan ditambahkan di menu sidebar</li>
+    <li><strong>⚙️ Pengaturan Sekolah</strong> &mdash; Mengatur nama sekolah, alamat, kepala sekolah, tahun ajaran aktif</li>
+    <li><strong>📊 Grafik Dashboard Lebih Interaktif</strong> &mdash; Visualisasi data yang lebih kaya</li>
+  </ul>
+</div>
+
+<!-- ==================== BAB 11: PEMECAHAN MASALAH ==================== -->
+<div class="page">
+  <div class="page-header">
+    <h2>Bab 11 &mdash; Pemecahan Masalah</h2>
+    <p>Solusi untuk masalah umum</p>
+  </div>
+
+  <h3>11.1 Aplikasi Tidak Bisa Diakses</h3>
+  <table>
+    <tr><th style="width:30%">Masalah</th><th>Penyebab</th><th>Solusi</th></tr>
+    <tr>
+      <td>"Connection refused"</td><td>Backend belum dijalankan</td>
+      <td>Jalankan <code>npm start</code> di folder <code>backend</code></td>
+    </tr>
+    <tr>
+      <td>Halaman putih / blank</td>
+      <td>Frontend belum di-build atau Vite belum jalan</td>
+      <td>Jalankan <code>npm run dev</code> di folder <code>frontend</code></td>
+    </tr>
+    <tr>
+      <td>Halaman tidak ditemukan (404)</td>
+      <td>URL salah atau frontend belum di-setup</td>
+      <td>Pastikan akses via <code>http://localhost:3000</code> (dev) atau <code>http://localhost:5000</code> (production)</td>
+    </tr>
+  </table>
+
+  <h3>11.2 Masalah Login</h3>
+  <table>
+    <tr><th style="width:30%">Masalah</th><th>Solusi</th></tr>
+    <tr><td>"Username atau password salah"</td>
+      <td>Gunakan akun demo: <code>admin</code> / <code>admin123</code> atau <code>bendahara</code> / <code>bendahara123</code></td>
+    </tr>
+    <tr><td>Terus dialihkan ke login</td>
+      <td>Hapus cache browser atau hapus <code>localStorage</code> (F12 → Application → Local Storage → Clear)</td>
+    </tr>
+  </table>
+
+  <h3>11.3 Masalah Database</h3>
+  <table>
+    <tr><th style="width:30%">Masalah</th><th>Solusi</th></tr>
+    <tr><td>Data hilang setelah restart</td>
+      <td>File database <code>sma_annajah.db</code> tersimpan di folder <code>backend/</code>. Jangan hapus file ini! Backup secara berkala.</td></tr>
+    <tr><td>Error "SQLITE_BUSY"</td>
+      <td>Tutup aplikasi lain yang mengakses file database yang sama. Restart backend server.</td></tr>
+    <tr><td>Reset database</td>
+      <td>Hentikan backend, hapus file <code>backend/sma_annajah.db</code>, lalu jalankan backend kembali. Database akan dibuat ulang dengan data sampel.</td></tr>
+  </table>
+
+  <h3>11.4 NPM Tidak Dikenali</h3>
+  <p>Jika muncul error <code>'npm' is not recognized</code>, berarti Node.js belum terinstall atau tidak terdaftar di PATH.</p>
+  <ul>
+    <li>Download dan install Node.js dari <a href="https://nodejs.org">https://nodejs.org</a> (versi LTS)</li>
+    <li>Restart komputer setelah installasi</li>
+    <li>Cek dengan: <code>node --version</code> dan <code>npm --version</code></li>
+  </ul>
+
+  <h3>11.5 Port Sudah Dipakai</h3>
+  <p>Jika port 5000 sudah dipakai aplikasi lain, ubah port di file <code>backend/server.js</code>:</p>
+  <div class="info-box">
+    <p><code>const PORT = process.env.PORT || 5000;</code><br>
+    Ubah menjadi: <code>const PORT = process.env.PORT || 5001;</code></p>
+  </div>
+
+  <h3>11.6 Backup Database</h3>
+  <p>Untuk membackup data, cukup <strong>copy file</strong> <code>backend/sma_annajah.db</code> ke lokasi aman. Untuk merestore, copy file backup kembali ke folder <code>backend/</code>.</p>
+
+  <div class="info-box danger">
+    <p><strong>📌 Penting:</strong> Selalu backup database secara berkala! File database adalah satu-satunya tempat penyimpanan data pembayaran.</p>
+  </div>
+
+  <h3>11.7 Kontak Dukungan</h3>
+  <p>Jika mengalami masalah yang tidak tercantum di atas, hubungi:</p>
+  <ul>
+    <li><strong>Pengembang:</strong> Tim IT SMA Annajah</li>
+    <li><strong>Dokumentasi Online:</strong> <code>README.md</code> di folder project</li>
+  </ul>
+</div>
+
+<!-- ==================== BAB 12: REFERENSI API ==================== -->
+<div class="page">
+  <div class="page-header">
+    <h2>Bab 12 &mdash; Referensi API</h2>
+    <p>Daftar lengkap endpoint API</p>
+  </div>
+
+  <p>Semua endpoint API (kecuali login) memerlukan header <code>Authorization: Bearer &lt;token&gt;</code>.</p>
+
+  <h3>12.1 Autentikasi</h3>
+  <table>
+    <tr><th>Method</th><th>Endpoint</th><th>Body</th><th>Response</th></tr>
+    <tr><td>POST</td><td><code>/api/auth/login</code></td><td><code>{ username, password }</code></td><td><code>{ token, user }</code></td></tr>
+    <tr><td>GET</td><td><code>/api/auth/me</code></td><td>-</td><td>Data user</td></tr>
+    <tr><td>PUT</td><td><code>/api/auth/ubah-password</code></td><td><code>{ password_lama, password_baru }</code></td><td><code>{ message }</code></td></tr>
+  </table>
+
+  <h3>12.2 Kelas</h3>
+  <table>
+    <tr><th>Method</th><th>Endpoint</th><th>Catatan</th></tr>
+    <tr><td>GET</td><td><code>/api/kelas</code></td><td>Semua kelas</td></tr>
+    <tr><td>POST</td><td><code>/api/kelas</code></td><td><code>{ nama_kelas, tingkat }</code></td></tr>
+    <tr><td>PUT</td><td><code>/api/kelas/:id</code></td><td>Update kelas</td></tr>
+    <tr><td>DELETE</td><td><code>/api/kelas/:id</code></td><td>Hapus kelas (gagal jika ada siswa)</td></tr>
+  </table>
+
+  <h3>12.3 Siswa</h3>
+  <table>
+    <tr><th>Method</th><th>Endpoint</th><th>Query Params</th></tr>
+    <tr><td>GET</td><td><code>/api/siswa</code></td><td><code>?kelas=&amp;status=&amp;search=</code></td></tr>
+    <tr><td>GET</td><td><code>/api/siswa/:id</code></td><td>-</td></tr>
+    <tr><td>POST</td><td><code>/api/siswa</code></td><td>Data siswa</td></tr>
+    <tr><td>PUT</td><td><code>/api/siswa/:id</code></td><td>Update siswa</td></tr>
+    <tr><td>DELETE</td><td><code>/api/siswa/:id</code></td><td>Hapus (cascade ke transaksi)</td></tr>
+  </table>
+
+  <h3>12.4 Jenis Pembayaran</h3>
+  <table>
+    <tr><th>Method</th><th>Endpoint</th><th>Catatan</th></tr>
+    <tr><td>GET</td><td><code>/api/pembayaran</code></td><td><code>?tahun_ajaran=</code></td></tr>
+    <tr><td>POST</td><td><code>/api/pembayaran</code></td><td><code>{ nama_pembayaran, tahun_ajaran, nominal, periode, keterangan }</code></td></tr>
+    <tr><td>PUT</td><td><code>/api/pembayaran/:id</code></td><td>Update jenis</td></tr>
+    <tr><td>DELETE</td><td><code>/api/pembayaran/:id</code></td><td>Gagal jika ada transaksi</td></tr>
+  </table>
+
+  <h3>12.5 Transaksi</h3>
+  <table>
+    <tr><th>Method</th><th>Endpoint</th><th>Catatan</th></tr>
+    <tr><td>GET</td><td><code>/api/transaksi</code></td><td><code>?id_siswa=&amp;tanggal_awal=&amp;tanggal_akhir=&amp;limit=</code></td></tr>
+    <tr><td>GET</td><td><code>/api/transaksi/:id</code></td><td>Detail transaksi</td></tr>
+    <tr><td>POST</td><td><code>/api/transaksi</code></td><td><code>{ id_siswa, id_jenis_pembayaran, jumlah_bayar, bulan_bayar, keterangan }</code></td></tr>
+    <tr><td>DELETE</td><td><code>/api/transaksi/:id</code></td><td>Hapus transaksi</td></tr>
+    <tr><td>GET</td><td><code>/api/transaksi/cek-spp/:id_siswa</code></td><td>Status SPP siswa</td></tr>
+  </table>
+
+  <h3>12.6 Laporan &amp; Export</h3>
+  <table>
+    <tr><th>Method</th><th>Endpoint</th><th>Response</th></tr>
+    <tr><td>GET</td><td><code>/api/laporan/dashboard</code></td><td>JSON - Data dashboard</td></tr>
+    <tr><td>GET</td><td><code>/api/laporan/rekap</code></td><td>JSON - Rekap per jenis</td></tr>
+    <tr><td>GET</td><td><code>/api/laporan/per-bulan</code></td><td>JSON - Laporan per bulan</td></tr>
+    <tr><td>GET</td><td><code>/api/laporan/siswa</code></td><td>JSON - Riwayat siswa</td></tr>
+    <tr><td>GET</td><td><code>/api/laporan/kwitansi/:id</code></td><td>PDF - Kwitansi</td></tr>
+    <tr><td>GET</td><td><code>/api/laporan/excel/rekap</code></td><td>XLSX - Excel rekap</td></tr>
+    <tr><td>GET</td><td><code>/api/laporan/excel/per-bulan</code></td><td>XLSX - Excel bulanan</td></tr>
+    <tr><td>GET</td><td><code>/api/laporan/excel/siswa</code></td><td>XLSX - Excel siswa</td></tr>
+    <tr><td>GET</td><td><code>/api/laporan/excel/transaksi</code></td><td>XLSX - Excel transaksi</td></tr>
+  </table>
+</div>
+
+<!-- ==================== INDEKS ==================== -->
+<div class="page">
+  <div class="page-header">
+    <h2>Indeks</h2>
+  </div>
+
+  <table>
+    <tr><th style="width:30%">Istilah</th><th>Deskripsi</th><th>Halaman</th></tr>
+    <tr><td>Admin</td><td>Role pengguna dengan akses penuh</td><td>Login</td></tr>
+    <tr><td>Bendahara</td><td>Role pengguna untuk transaksi &amp; laporan</td><td>Login</td></tr>
+    <tr><td>Dashboard</td><td>Halaman utama ringkasan data</td><td>Dashboard</td></tr>
+    <tr><td>Excel</td><td>Export laporan ke format Excel (.xlsx)</td><td>Laporan</td></tr>
+    <tr><td>JWT</td><td>JSON Web Token untuk autentikasi</td><td>Login</td></tr>
+    <tr><td>Kelas X, XI, XII</td><td>Tingkat kelas (10, 11, 12)</td><td>Kelas</td></tr>
+    <tr><td>Kwitansi</td><td>Bukti pembayaran format PDF A5</td><td>Transaksi</td></tr>
+    <tr><td>NIS</td><td>Nomor Induk Siswa (unik)</td><td>Siswa</td></tr>
+    <tr><td>NISN</td><td>Nomor Induk Siswa Nasional</td><td>Siswa</td></tr>
+    <tr><td>SPP</td><td>Biaya pendidikan bulanan siswa</td><td>Transaksi</td></tr>
+    <tr><td>SQLite</td><td>Database file-based (tidak perlu server)</td><td>Pendahuluan</td></tr>
+  </table>
+
+  <br><br>
+
+  <div style="text-align: center; padding: 30px; color: #94a3b8; font-size: 14px; border-top: 1px solid #e2e8f0;">
+    <p><strong>SMA Annajah</strong></p>
+    <p>Sistem Administrasi Sekolah — Buku Panduan Versi 1.0</p>
+    <p>&copy; 2025 SMA Annajah</p>
+  </div>
+</div>
+
+</body>
+</html>
