@@ -1,126 +1,124 @@
 import { NavLink, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import {
   LayoutDashboard, Users, GraduationCap, CreditCard,
   ArrowLeftRight, FileText, LogOut, School, ChevronRight,
   X, Settings, Shield, Database as DatabaseIcon, ClipboardList,
   User, DoorOpen, Mail, CheckSquare,  Clock, History, CalendarDays,
-  Medal, BarChart3, HeartHandshake, Trophy, Award, Palette, BookOpen, ClipboardCheck, Calendar
+  Medal, BarChart3, HeartHandshake, Trophy, Award, Palette, BookOpen, ClipboardCheck, Calendar, Activity, ChevronDown
 } from 'lucide-react'
-import { getPengaturan } from '../api'
+import { getPengaturan, getRolePermissionsByRole } from '../api'
 
 // ─── Menu Structure with Groups ───
 const menuGroups = [
   {
     label: 'Utama',
+    icon: LayoutDashboard,
     items: [
-      { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, hideForRoles: ['guru'] },
-      { path: '/guru-dashboard', label: 'Dashboard', icon: LayoutDashboard, showForRoles: ['guru'] },
-      { path: '/profil-saya', label: 'Profil Saya', icon: User, showForRoles: ['guru'] },
-      { path: '/daftar-kehadiran-saya', label: 'Daftar Kehadiran Saya', icon: History, showForRoles: ['guru'] },
-      { path: '/kehadiran-guru-saya', label: 'Absen Kehadiran', icon: Clock, showForRoles: ['guru'] },
+      { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+      { path: '/guru-dashboard', label: 'Dashboard (Karyawan)', icon: LayoutDashboard },
+      { path: '/profil-saya', label: 'Profil Saya', icon: User },
+      { path: '/daftar-kehadiran-saya', label: 'Daftar Kehadiran Saya', icon: History },
+      { path: '/kehadiran-guru-saya', label: 'Absen Kehadiran', icon: Clock },
     ],
   },
   {
-    label: 'Karyawan',
-    guruLabel: 'Data Kesiswaan',
+    label: 'Kepegawaian',
+    icon: Users,
     items: [
-      { path: '/siswa-wali', label: 'Daftar Siswa', icon: ClipboardList, showForRoles: ['guru'] },
-      { path: '/kehadiran-wali', label: 'Kehadiran Siswa', icon: ClipboardList, showForRoles: ['guru'] },      {
-        path: '/input-kehadiran-wali', label: 'Input Kehadiran Siswa Masal', icon: CheckSquare, showForRoles: ['guru'] },
-      { path: '/guru', label: 'Data Karyawan', icon: Users, hideForRoles: ['guru'] },
-      { path: '/kehadiran-guru', label: 'Kehadiran Karyawan', icon: Clock, hideForRoles: ['guru'] },
-      { path: '/rekap-kehadiran-guru', label: 'Rekap Kehadiran Karyawan', icon: CalendarDays, hideForRoles: ['guru'] },
+      { path: '/guru', label: 'Data Karyawan', icon: Users },
+      { path: '/kehadiran-guru', label: 'Kehadiran Karyawan', icon: Clock },
+      { path: '/rekap-kehadiran-guru', label: 'Rekap Kehadiran Karyawan', icon: CalendarDays },
     ],
-    subGroups: [
-      {
-        label: 'Kesiswaan',
-        items: [
-          { path: '/siswa', label: 'Data Siswa', icon: Users, hideForRoles: ['guru'] },
-          { path: '/alumni', label: 'Alumni', icon: GraduationCap, hideForRoles: ['guru'] },
-          { path: '/kelas', label: 'Kelas', icon: GraduationCap, hideForRoles: ['guru'] },
-          { path: '/kehadiran', label: 'Kehadiran Siswa', icon: ClipboardList, hideForRoles: ['guru'] },
-          { path: '/kehadiran/bulk', label: 'Input Kehadiran Masal', icon: CheckSquare, hideForRoles: ['guru'] },
-        ],
-      },
-      {
-        label: 'Ekstrakurikuler',
-        items: [
-          { path: '/ekstrakurikuler/peserta', label: 'Peserta Ekstrakurikuler', icon: Medal, showForRoles: ['guru'] },
-          { path: '/ekstrakurikuler/input-peserta', label: 'Input Peserta', icon: User, showForRoles: ['guru'] },
-          { path: '/ekstrakurikuler/rekap', label: 'Rekap Peserta', icon: BarChart3, showForRoles: ['guru'] },
-        ],
-      },
-      {
-        label: 'Bimbingan Konseling',
-        items: [
-          { path: '/bimbingan-konseling', label: 'Daftar BK', icon: HeartHandshake },
-          { path: '/bimbingan-konseling/input', label: 'Input BK', icon: User },
-          { path: '/bimbingan-konseling/rekap', label: 'Rekap BK', icon: BarChart3 },
-        ],
-      },        { label: 'Nilai Siswa',
-        items: [
-          { path: '/nilai-siswa', label: 'Daftar Nilai', icon: ClipboardCheck },
-          { path: '/nilai-siswa/input', label: 'Input Nilai', icon: User },
-          { path: '/nilai-siswa/rekap', label: 'Rekap Nilai', icon: BarChart3 },
-          { path: '/periode-penilaian', label: 'Periode Penilaian', icon: CalendarDays },
-        ],
-      },
-      { label: 'Prestasi Siswa',
-        items: [
-          { path: '/prestasi-siswa', label: 'Daftar Prestasi', icon: Trophy },
-          { path: '/prestasi-siswa/input', label: 'Input Prestasi', icon: Award },
-          { path: '/prestasi-siswa/rekap', label: 'Rekap Prestasi', icon: BarChart3 },
-          { path: '/prestasi-siswa/pengaturan', label: 'Template Piagam', icon: Palette, hideForRoles: ['guru'] },
-        ],
-      },
+  },
+  {
+    label: 'Kesiswaan',
+    icon: GraduationCap,
+    items: [
+      { path: '/siswa-wali', label: 'Daftar Siswa (Wali Kelas)', icon: ClipboardList },
+      { path: '/kehadiran-wali', label: 'Kehadiran Siswa (Wali Kelas)', icon: ClipboardList },
+      { path: '/input-kehadiran-wali', label: 'Input Kehadiran Masal (Wali)', icon: CheckSquare },
+      { path: '/siswa', label: 'Data Siswa', icon: Users },
+      { path: '/alumni', label: 'Alumni', icon: GraduationCap },
+      { path: '/kelas', label: 'Kelas', icon: GraduationCap },
+      { path: '/kehadiran', label: 'Kehadiran Siswa', icon: ClipboardList },
+      { path: '/kehadiran/bulk', label: 'Input Kehadiran Masal', icon: CheckSquare },
+    ],
+  },
+  {
+    label: 'Ekstrakurikuler',
+    icon: Medal,
+    items: [
+      { path: '/ekstrakurikuler', label: 'Data Ekstrakurikuler', icon: Medal },
+      { path: '/ekstrakurikuler/peserta', label: 'Peserta Ekstrakurikuler', icon: Users },
+      { path: '/ekstrakurikuler/input-peserta', label: 'Input Peserta', icon: User },
+      { path: '/ekstrakurikuler/rekap', label: 'Rekap Peserta', icon: BarChart3 },
+    ],
+  },
+  {
+    label: 'Bimbingan Konseling',
+    icon: HeartHandshake,
+    items: [
+      { path: '/bimbingan-konseling', label: 'Daftar BK', icon: HeartHandshake },
+      { path: '/bimbingan-konseling/input', label: 'Input BK', icon: User },
+      { path: '/bimbingan-konseling/rekap', label: 'Rekap BK', icon: BarChart3 },
+    ],
+  },
+  {
+    label: 'Nilai Siswa',
+    icon: ClipboardCheck,
+    items: [
+      { path: '/nilai-siswa', label: 'Daftar Nilai', icon: ClipboardCheck },
+      { path: '/nilai-siswa/input', label: 'Input Nilai', icon: User },
+      { path: '/nilai-siswa/rekap', label: 'Rekap Nilai', icon: BarChart3 },
+      { path: '/periode-penilaian', label: 'Periode Penilaian', icon: CalendarDays },
+    ],
+  },
+  {
+    label: 'Prestasi Siswa',
+    icon: Trophy,
+    items: [
+      { path: '/prestasi-siswa', label: 'Daftar Prestasi', icon: Trophy },
+      { path: '/prestasi-siswa/input', label: 'Input Prestasi', icon: Award },
+      { path: '/prestasi-siswa/rekap', label: 'Rekap Prestasi', icon: BarChart3 },
+      { path: '/prestasi-siswa/pengaturan', label: 'Template Piagam', icon: Palette },
     ],
   },
   {
     label: 'Mata Pelajaran',
+    icon: BookOpen,
     items: [
       { path: '/mata-pelajaran', label: 'Mata Pelajaran', icon: BookOpen },
     ],
   },
   {
     label: 'PPDB',
+    icon: DoorOpen,
     items: [
-      { path: '/ppdb/admin', label: 'Data PPDB', icon: DoorOpen, ppdbAccessRequired: true },
-      { path: '/ppdb/pengaturan', label: 'Pengaturan PPDB', icon: Mail, ppdbAccessRequired: true },
+      { path: '/ppdb/admin', label: 'Data PPDB', icon: DoorOpen },
+      { path: '/ppdb/pengaturan', label: 'Pengaturan PPDB', icon: Mail },
     ],
   },
   {
     label: 'Transaksi & Laporan',
+    icon: ArrowLeftRight,
     items: [
-      { path: '/transaksi', label: 'Transaksi', icon: ArrowLeftRight, hideForRoles: ['guru'] },
-      { path: '/laporan', label: 'Laporan', icon: FileText, hideForRoles: ['guru'] },
-      { path: '/pembayaran', label: 'Jenis Pembayaran', icon: CreditCard, hideForRoles: ['guru'] },
-    ],
-  },
-  {
-    label: 'Ekstrakurikuler',
-    items: [
-      { path: '/ekstrakurikuler', label: 'Data Ekstrakurikuler', icon: Medal, hideForRoles: ['guru'] },
-    ],
-    subGroups: [
-      {
-        label: 'Peserta',
-        items: [
-          { path: '/ekstrakurikuler/peserta', label: 'Peserta Ekstrakurikuler', icon: Users, hideForRoles: ['guru'] },
-          { path: '/ekstrakurikuler/input-peserta', label: 'Input Peserta', icon: User, hideForRoles: ['guru'] },
-          { path: '/ekstrakurikuler/rekap', label: 'Rekap Peserta', icon: BarChart3, hideForRoles: ['guru'] },
-        ],
-      },
+      { path: '/transaksi', label: 'Transaksi', icon: ArrowLeftRight },
+      { path: '/laporan', label: 'Laporan', icon: FileText },
+      { path: '/pembayaran', label: 'Jenis Pembayaran', icon: CreditCard },
     ],
   },
   {
     label: 'Pengaturan',
+    icon: Settings,
     items: [
-      { path: '/pengaturan', label: 'Pengaturan', icon: Settings, hideForRoles: ['guru'] },
-      { path: '/tahun-ajaran', label: 'Tahun Pelajaran', icon: Calendar, hideForRoles: ['guru'] },
-      { path: '/users', label: 'Manajemen User', icon: Shield, adminOnly: true },
-      { path: '/database', label: 'Backup Database', icon: DatabaseIcon, adminOnly: true },
+      { path: '/pengaturan', label: 'Pengaturan', icon: Settings },
+      { path: '/tahun-ajaran', label: 'Tahun Pelajaran', icon: Calendar },
+      { path: '/users', label: 'Manajemen User', icon: Shield },
+      { path: '/database', label: 'Backup Database', icon: DatabaseIcon },
+      { path: '/role-permissions', label: 'Hak Akses Menu', icon: Shield },
+      { path: '/log-aktivitas', label: 'Log Aktivitas', icon: Activity },
     ],
   },
 ]
@@ -263,30 +261,57 @@ function UserProfile({ user, collapsed }) {
 }
 
 // ─── Group Label ───
-function GroupLabel({ label, collapsed }) {
-  return (
-    <div className={`
-      px-4 py-2 transition-all duration-300 ease-out
-      ${collapsed ? 'opacity-0 max-h-0 overflow-hidden py-0' : 'opacity-100'}
-    `}>
-      <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">
-        {label}
-      </span>
-    </div>
-  )
-}
+function GroupLabel({ label, icon: Icon, collapsed, isExpanded, onToggle, primaryColor, itemCount }) {
+  const bgColor = primaryColor || '#15803D'
 
-// ─── Sub-Menu Label ───
-function SubMenuLabel({ label, collapsed }) {
   return (
-    <div className={`
-      px-4 pt-3 pb-1 transition-all duration-300 ease-out
-      ${collapsed ? 'opacity-0 max-h-0 overflow-hidden py-0' : 'opacity-100'}
-    `}>
-      <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider ml-1">
-        ▸ {label}
-      </span>
-    </div>
+    <button
+      onClick={onToggle}
+      className={`
+        w-full text-left transition-all duration-300 ease-out group
+        ${collapsed ? 'opacity-0 max-h-0 overflow-hidden py-0 pointer-events-none' : 'opacity-100'}
+      `}
+    >
+      <div
+        className="mx-2 mt-1 mb-0.5 px-3 py-1.5 rounded-lg flex items-center justify-between transition-all duration-200 hover:shadow-md group-hover:brightness-105"
+        style={{ backgroundColor: `${bgColor}0D` }}
+      >
+        <div className="flex items-center gap-2">
+          {/* Icon with hover scale + glow effect */}
+          <span className="
+            flex items-center justify-center w-5 h-5
+            transition-all duration-300 ease-out
+            group-hover:scale-125 group-hover:drop-shadow-[0_0_6px_var(--glow-color)]
+          "
+            style={{ '--glow-color': bgColor }}
+          >
+            {Icon && (
+              <Icon
+                className="w-3.5 h-3.5 transition-all duration-300"
+                style={{ color: bgColor }}
+                strokeWidth={2.5}
+              />
+            )}
+          </span>
+          <span
+            className="text-[10px] font-semibold uppercase tracking-widest transition-all duration-200"
+            style={{ color: bgColor }}
+          >
+            {label}
+          </span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="text-[10px] font-medium opacity-50 transition-all duration-200" style={{ color: bgColor }}>
+            {itemCount}
+          </span>
+          <ChevronDown
+            className={`w-3 h-3 transition-all duration-300 ${isExpanded ? 'rotate-180' : ''}`}
+            style={{ color: bgColor }}
+            strokeWidth={2.5}
+          />
+        </div>
+      </div>
+    </button>
   )
 }
 
@@ -326,21 +351,84 @@ export default function Sidebar({ collapsed, setCollapsed, mobileOpen, setMobile
   const { user, logout } = useAuth()
   const location = useLocation()
   const [logoUrl, setLogoUrl] = useState(null)
+  const [primaryColor, setPrimaryColor] = useState('#1A56DB')
+  const [expandedGroups, setExpandedGroups] = useState(() => {
+    // Default: semua grup yang ada itemnya di-expand
+    const saved = localStorage.getItem('sidebar_expanded_groups')
+    if (saved) {
+      try { return new Set(JSON.parse(saved)) } catch {}
+    }
+    // Default: expand semua grup
+    return new Set(menuGroups.map(g => g.label))
+  })
+  const [permissions, setPermissions] = useState(null) // { [path]: true/false }
+  const [loadingPerms, setLoadingPerms] = useState(true)
+
+  // Load permissions from API for the user's role
+  useEffect(() => {
+    if (!user) return
+    let cancelled = false
+    setLoadingPerms(true)
+    getRolePermissionsByRole(user.role)
+      .then(res => {
+        if (!cancelled) {
+          setPermissions(res.data)
+          setLoadingPerms(false)
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          // Fallback: set to null so isPathAllowed returns true for all
+          setPermissions(null)
+          setLoadingPerms(false)
+        }
+      })
+    return () => { cancelled = true }
+  }, [user?.role])
+
+  // Toggle group expand/collapse
+  const toggleGroup = useCallback((label) => {
+    setExpandedGroups(prev => {
+      const next = new Set(prev)
+      if (next.has(label)) {
+        next.delete(label)
+      } else {
+        next.add(label)
+      }
+      // Simpan preferensi ke localStorage
+      localStorage.setItem('sidebar_expanded_groups', JSON.stringify([...next]))
+      return next
+    })
+  }, [])
 
   useEffect(() => {
-    loadLogo()
+    loadSettings()
   }, [location.pathname])
 
-  const loadLogo = async () => {
+  const loadSettings = async () => {
     try {
       const res = await getPengaturan()
       if (res.data?.logo) {
         setLogoUrl(res.data.logo)
       }
+      if (res.data?.warna_utama) {
+        setPrimaryColor(res.data.warna_utama)
+      }
     } catch {
       // Abaikan error — fallback ke icon default
     }
   }
+
+  // Check if a menu path is allowed based on permissions
+  const isPathAllowed = useCallback((path) => {
+    if (!permissions) return true // while loading, show all
+    // If explicitly set, use the value
+    if (path in permissions) {
+      return permissions[path]
+    }
+    // Path not found in permissions - default to not showing
+    return false
+  }, [permissions])
 
   const sidebarContent = (
     <>
@@ -351,65 +439,45 @@ export default function Sidebar({ collapsed, setCollapsed, mobileOpen, setMobile
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto overflow-x-hidden py-2 space-y-1 scrollbar-thin">
-        {menuGroups.map((group) => {
-          const visibleItems = group.items.filter(item => {
-            if (item.adminOnly && user?.role !== 'admin') return false
-            if (item.hideForRoles?.includes(user?.role)) return false
-            if (item.showForRoles && !item.showForRoles.includes(user?.role)) return false
-            if (item.ppdbAccessRequired && user?.role === 'guru' && !user?.ppdb_access) return false
-            return true
-          })
+        {loadingPerms ? (
+          <div className="flex justify-center py-8">
+            <div className="w-6 h-6 border-2 border-annajah-300 border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        ) : menuGroups.map((group) => {
+          const visibleItems = group.items.filter(item => isPathAllowed(item.path))
           if (visibleItems.length === 0) return null
 
-          const visibleSubGroups = (group.subGroups || [])
-            .map(sg => ({
-              ...sg,
-              visibleItems: sg.items.filter(item => {
-                if (item.adminOnly && user?.role !== 'admin') return false
-                if (item.hideForRoles?.includes(user?.role)) return false
-                if (item.showForRoles && !item.showForRoles.includes(user?.role)) return false
-                if (item.ppdbAccessRequired && user?.role === 'guru' && !user?.ppdb_access) return false
-                return true
-              })
-            }))
-            .filter(sg => sg.visibleItems.length > 0)
+          const isExpanded = expandedGroups.has(group.label)
 
           return (
             <div key={group.label} className="mb-1">
-              <GroupLabel label={user?.role === 'guru' ? group.guruLabel || group.label : group.label} collapsed={collapsed} />
-              <div className="space-y-0.5 px-2">
-                {visibleItems.map((item) => {
-                  if (item.type === 'subheader') return null
-                  const isActive = location.pathname === item.path
-                  return (
-                    <NavItem
-                      key={item.path}
-                      item={item}
-                      collapsed={collapsed}
-                      isActive={isActive}
-                      onClick={() => setMobileOpen?.(false)}
-                    />
-                  )
-                })}
-                {visibleSubGroups.map((sg) => (
-                  <div key={sg.label}>
-                    <SubMenuLabel label={sg.label} collapsed={collapsed} />
-                    <div className="space-y-0.5">
-                      {sg.visibleItems.map((item) => {
-                        const isActive = location.pathname === item.path
-                        return (
-                          <NavItem
-                            key={item.path}
-                            item={item}
-                            collapsed={collapsed}
-                            isActive={isActive}
-                            onClick={() => setMobileOpen?.(false)}
-                          />
-                        )
-                      })}
-                    </div>
-                  </div>
-                ))}
+              <GroupLabel
+                label={group.label}
+                icon={group.icon}
+                collapsed={collapsed}
+                isExpanded={isExpanded}
+                onToggle={() => toggleGroup(group.label)}
+                primaryColor={primaryColor}
+                itemCount={visibleItems.length}
+              />
+              <div className={`
+                overflow-hidden transition-all duration-300 ease-in-out
+                ${isExpanded ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0 pointer-events-none'}
+              `}>
+                <div className="space-y-0.5 px-2">
+                  {visibleItems.map((item) => {
+                    const isActive = location.pathname === item.path
+                    return (
+                      <NavItem
+                        key={item.path}
+                        item={item}
+                        collapsed={collapsed}
+                        isActive={isActive}
+                        onClick={() => setMobileOpen?.(false)}
+                      />
+                    )
+                  })}
+                </div>
               </div>
             </div>
           )

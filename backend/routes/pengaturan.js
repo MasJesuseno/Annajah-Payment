@@ -5,6 +5,7 @@ const fs = require('fs');
 const multer = require('multer');
 const { getDatabase } = require('../database');
 const { authenticateToken } = require('../middleware/auth');
+const { logActivity } = require('../helpers/activityLogHelper');
 
 // ─── Public Route: Logo (tidak perlu auth agar bisa dipakai di halaman login) ───
 router.get('/logo', async (req, res) => {
@@ -128,6 +129,7 @@ router.put('/', async (req, res) => {
       conn.release();
     }
 
+    await logActivity(req, 'Ubah', 'Pengaturan', null, 'Menyimpan pengaturan sekolah');
     res.json({ message: 'Pengaturan berhasil disimpan' });
   } catch (error) {
     res.status(500).json({ message: 'Gagal menyimpan pengaturan', error: error.message });
@@ -160,6 +162,7 @@ router.post('/logo', uploadLogo.single('logo'), async (req, res) => {
       ['logo', logoUrl]
     );
 
+    await logActivity(req, 'Ubah', 'Pengaturan', null, 'Mengupload logo sekolah');
     res.json({ message: 'Logo berhasil diupload', logo: logoUrl });
   } catch (error) {
     res.status(500).json({ message: 'Gagal mengupload logo', error: error.message });
@@ -186,6 +189,7 @@ router.delete('/logo', async (req, res) => {
       ['logo', '']
     );
 
+    await logActivity(req, 'Hapus', 'Pengaturan', null, 'Menghapus logo sekolah');
     res.json({ message: 'Logo berhasil dihapus' });
   } catch (error) {
     res.status(500).json({ message: 'Gagal menghapus logo', error: error.message });

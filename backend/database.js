@@ -464,6 +464,113 @@ async function initDatabase() {
     } catch (e) {}
 
     await conn.execute(`
+      CREATE TABLE IF NOT EXISTS role_permissions (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        role VARCHAR(50) NOT NULL,
+        menu_path VARCHAR(255) NOT NULL,
+        can_access TINYINT(1) DEFAULT 1,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY unique_role_menu (role, menu_path)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
+    // Tambah menu /log-aktivitas untuk role yang sudah ada (migrasi database existing)
+    try {
+      const [logPathExists] = await conn.execute(
+        "SELECT COUNT(*) as count FROM role_permissions WHERE menu_path = '/log-aktivitas' AND role = 'admin'"
+      );
+      if (logPathExists[0].count === 0) {
+        // Admin: full access
+        await conn.execute(
+          'INSERT INTO role_permissions (role, menu_path, can_access) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE can_access = VALUES(can_access)',
+          ['admin', '/log-aktivitas', 1]
+        );
+        // Bendahara: no access
+        await conn.execute(
+          'INSERT INTO role_permissions (role, menu_path, can_access) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE can_access = VALUES(can_access)',
+          ['bendahara', '/log-aktivitas', 0]
+        );
+        // Guru: no access
+        await conn.execute(
+          'INSERT INTO role_permissions (role, menu_path, can_access) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE can_access = VALUES(can_access)',
+          ['guru', '/log-aktivitas', 0]
+        );
+      }
+    } catch (e) {
+      console.log('[role_permissions] Log aktivitas migration error (non-fatal):', e.message);
+    }
+
+    // Migrate ppdb_access to role_permissions for guru role if not yet migrated
+    try {
+      const [permCount] = await conn.execute("SELECT COUNT(*) as count FROM role_permissions WHERE role = 'admin'");
+      if (permCount[0].count === 0) {
+        // Seed default permissions for all roles
+        const allMenus = [
+          '/dashboard', '/guru-dashboard', '/profil-saya', '/daftar-kehadiran-saya', '/kehadiran-guru-saya',
+          '/siswa-wali', '/kehadiran-wali', '/input-kehadiran-wali',
+          '/guru', '/kehadiran-guru', '/rekap-kehadiran-guru',
+          '/siswa', '/alumni', '/kelas', '/kehadiran', '/kehadiran/bulk',
+          '/ekstrakurikuler', '/ekstrakurikuler/peserta', '/ekstrakurikuler/input-peserta', '/ekstrakurikuler/rekap',
+          '/bimbingan-konseling', '/bimbingan-konseling/input', '/bimbingan-konseling/rekap',
+          '/nilai-siswa', '/nilai-siswa/input', '/nilai-siswa/rekap', '/periode-penilaian',
+          '/prestasi-siswa', '/prestasi-siswa/input', '/prestasi-siswa/rekap', '/prestasi-siswa/pengaturan',
+          '/mata-pelajaran',
+          '/ppdb/admin', '/ppdb/pengaturan',
+          '/transaksi', '/laporan', '/pembayaran',
+          '/pengaturan', '/tahun-ajaran', '/users', '/database',
+          '/role-permissions', '/log-aktivitas',
+        ];
+        const insertPerm = 'INSERT INTO role_permissions (role, menu_path, can_access) VALUES (?, ?, ?)';
+        
+        // Admin: all menus
+        for (const path of allMenus) {
+          await conn.execute(insertPerm, ['admin', path, 1]);
+        }
+        
+        // Bendahara: all except users, database, role-permissions, log-aktivitas
+        for (const path of allMenus) {
+          if (path === '/users' || path === '/database' || path === '/role-permissions' || path === '/log-aktivitas') {
+            await conn.execute(insertPerm, ['bendahara', path, 0]);
+          } else {
+            await conn.execute(insertPerm, ['bendahara', path, 1]);
+          }
+        }
+        
+        // Guru: only guru-specific menus + shared menus
+        const guruAccess = [
+          '/guru-dashboard', '/profil-saya', '/daftar-kehadiran-saya', '/kehadiran-guru-saya',
+          '/siswa-wali', '/kehadiran-wali', '/input-kehadiran-wali',
+          '/ekstrakurikuler/peserta', '/ekstrakurikuler/input-peserta', '/ekstrakurikuler/rekap',
+          '/bimbingan-konseling', '/bimbingan-konseling/input', '/bimbingan-konseling/rekap',
+          '/nilai-siswa', '/nilai-siswa/input', '/nilai-siswa/rekap', '/periode-penilaian',
+          '/prestasi-siswa', '/prestasi-siswa/input', '/prestasi-siswa/rekap',
+          '/mata-pelajaran',
+        ];
+        for (const path of allMenus) {
+          await conn.execute(insertPerm, ['guru', path, guruAccess.includes(path) ? 1 : 0]);
+        }
+      }
+    } catch (e) {
+      console.log('[role_permissions] Seed error (non-fatal):', e.message);
+    }
+
+    await conn.execute(`
+      CREATE TABLE IF NOT EXISTS activity_log (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        id_user INT DEFAULT NULL,
+        username VARCHAR(100) DEFAULT NULL,
+        action VARCHAR(50) NOT NULL,
+        entity_type VARCHAR(50) DEFAULT NULL,
+        entity_id INT DEFAULT NULL,
+        description TEXT DEFAULT NULL,
+        ip_address VARCHAR(50) DEFAULT NULL,
+        user_agent TEXT DEFAULT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (id_user) REFERENCES users(id) ON DELETE SET NULL
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
+    await conn.execute(`
       CREATE TABLE IF NOT EXISTS ppdb_email_log (
         id INT AUTO_INCREMENT PRIMARY KEY,
         ppdb_id INT NOT NULL,

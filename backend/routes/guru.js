@@ -6,6 +6,7 @@ const path = require('path');
 const fs = require('fs');
 const { getDatabase } = require('../database');
 const { authenticateToken } = require('../middleware/auth');
+const { logActivity } = require('../helpers/activityLogHelper');
 
 // ── Foto Upload Config ──
 const UPLOAD_DIR = path.join(__dirname, '..', 'uploads', 'guru');
@@ -666,6 +667,15 @@ router.post('/', async (req, res) => {
       WHERE g.id = ?
     `, [newGuruId]);
 
+    const ip = req.ip || req.connection.remoteAddress;
+    const userAgent = req.get('User-Agent');
+    await logActivity({
+      id_user: req.user.id, username: req.user.username,
+      action: 'create', entity_type: 'guru', entity_id: newGuruId,
+      description: `Menambah karyawan: ${nama} (${username})`,
+      ip_address: ip, user_agent: userAgent,
+    });
+
     res.status(201).json(newGuru[0]);
   } catch (error) {
     res.status(500).json({ message: 'Gagal menambah guru', error: error.message });
@@ -768,6 +778,15 @@ router.put('/:id', async (req, res) => {
       WHERE g.id = ?
     `, [id]);
 
+    const ip = req.ip || req.connection.remoteAddress;
+    const userAgent = req.get('User-Agent');
+    await logActivity({
+      id_user: req.user.id, username: req.user.username,
+      action: 'update', entity_type: 'guru', entity_id: parseInt(id),
+      description: `Mengupdate karyawan: ${nama || guru.nama}`,
+      ip_address: ip, user_agent: userAgent,
+    });
+
     res.json(updatedGuru[0]);
   } catch (error) {
     res.status(500).json({ message: 'Gagal mengupdate guru', error: error.message });
@@ -803,6 +822,15 @@ router.delete('/:id', async (req, res) => {
     if (guru.id_user) {
       await db.execute('DELETE FROM users WHERE id = ?', [guru.id_user]);
     }
+
+    const ip = req.ip || req.connection.remoteAddress;
+    const userAgent = req.get('User-Agent');
+    await logActivity({
+      id_user: req.user.id, username: req.user.username,
+      action: 'delete', entity_type: 'guru', entity_id: parseInt(req.params.id),
+      description: `Menghapus karyawan: ${guru.nama}`,
+      ip_address: ip, user_agent: userAgent,
+    });
 
     res.json({ message: 'Guru berhasil dihapus' });
   } catch (error) {
@@ -957,6 +985,15 @@ router.delete('/riwayat-pendidikan/:id', async (req, res) => {
     }
 
     await db.execute('DELETE FROM riwayat_pendidikan WHERE id = ?', [req.params.id]);
+    const ip = req.ip || req.connection.remoteAddress;
+    const userAgent = req.get('User-Agent');
+    await logActivity({
+      id_user: req.user.id, username: req.user.username,
+      action: 'delete', entity_type: 'riwayat-pendidikan', entity_id: parseInt(req.params.id),
+      description: `Menghapus riwayat pendidikan ID: ${req.params.id}`,
+      ip_address: ip, user_agent: userAgent,
+    });
+
     res.json({ message: 'Riwayat pendidikan berhasil dihapus' });
   } catch (error) {
     res.status(500).json({ message: 'Gagal menghapus riwayat pendidikan', error: error.message });

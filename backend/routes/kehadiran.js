@@ -3,6 +3,7 @@ const router = express.Router();
 const { getDatabase } = require('../database');
 const { authenticateToken } = require('../middleware/auth');
 const { handleError } = require('../helpers/errorHandler');
+const { logActivity } = require('../helpers/activityLogHelper');
 
 router.use(authenticateToken);
 
@@ -390,6 +391,15 @@ router.post('/', async (req, res) => {
       [id_siswa, tanggal, jam_masuk || null, jam_keluar || null, status]
     );
 
+    const ip = req.ip || req.connection.remoteAddress;
+    const userAgent = req.get('User-Agent');
+    await logActivity({
+      id_user: req.user.id, username: req.user.username,
+      action: 'create', entity_type: 'kehadiran', entity_id: result.insertId,
+      description: `Menambah kehadiran siswa ID: ${id_siswa} - ${status}`,
+      ip_address: ip, user_agent: userAgent,
+    });
+
     res.status(201).json({ id: result.insertId, message: 'Data kehadiran berhasil ditambahkan' });
   } catch (error) {
     handleError(error, req, res, 'Gagal menambah data kehadiran');
@@ -429,6 +439,15 @@ router.put('/:id', async (req, res) => {
 
     params.push(req.params.id);
     await db.execute(`UPDATE kehadiran SET ${fields.join(', ')} WHERE id = ?`, params);
+
+    const ip = req.ip || req.connection.remoteAddress;
+    const userAgent = req.get('User-Agent');
+    await logActivity({
+      id_user: req.user.id, username: req.user.username,
+      action: 'update', entity_type: 'kehadiran', entity_id: parseInt(req.params.id),
+      description: `Mengupdate kehadiran ID: ${req.params.id}`,
+      ip_address: ip, user_agent: userAgent,
+    });
 
     res.json({ message: 'Data kehadiran berhasil diupdate' });
   } catch (error) {
@@ -507,6 +526,15 @@ router.delete('/:id', async (req, res) => {
       return res.status(404).json({ message: 'Data kehadiran tidak ditemukan' });
     }
     await db.execute('DELETE FROM kehadiran WHERE id = ?', [req.params.id]);
+    const ip = req.ip || req.connection.remoteAddress;
+    const userAgent = req.get('User-Agent');
+    await logActivity({
+      id_user: req.user.id, username: req.user.username,
+      action: 'delete', entity_type: 'kehadiran', entity_id: parseInt(req.params.id),
+      description: `Menghapus kehadiran ID: ${req.params.id}`,
+      ip_address: ip, user_agent: userAgent,
+    });
+
     res.json({ message: 'Data kehadiran berhasil dihapus' });
   } catch (error) {
     handleError(error, req, res, 'Gagal menghapus data kehadiran');

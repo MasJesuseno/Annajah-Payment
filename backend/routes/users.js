@@ -3,6 +3,7 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const { getDatabase } = require('../database');
 const { authenticateToken } = require('../middleware/auth');
+const { logActivity } = require('../helpers/activityLogHelper');
 
 // Middleware: hanya admin yang bisa akses
 function adminOnly(req, res, next) {
@@ -79,6 +80,15 @@ router.post('/', async (req, res) => {
       LEFT JOIN guru g ON g.id_user = u.id
       WHERE u.id = ?
     `, [userId]);
+
+    const ip = req.ip || req.connection.remoteAddress;
+    const userAgent = req.get('User-Agent');
+    await logActivity({
+      id_user: req.user.id, username: req.user.username,
+      action: 'create', entity_type: 'user', entity_id: userId,
+      description: `Menambah user: ${username} (${userRole})`,
+      ip_address: ip, user_agent: userAgent,
+    });
 
     res.status(201).json(newUserRows[0]);
   } catch (error) {
@@ -185,6 +195,15 @@ router.put('/:id', async (req, res) => {
       WHERE u.id = ?
     `, [id]);
 
+    const ip = req.ip || req.connection.remoteAddress;
+    const userAgent = req.get('User-Agent');
+    await logActivity({
+      id_user: req.user.id, username: req.user.username,
+      action: 'update', entity_type: 'user', entity_id: parseInt(id),
+      description: `Mengupdate user: ${username || user.username}`,
+      ip_address: ip, user_agent: userAgent,
+    });
+
     res.json(updatedRows[0]);
   } catch (error) {
     res.status(500).json({ message: 'Gagal mengupdate user', error: error.message });
@@ -219,6 +238,15 @@ router.delete('/:id', async (req, res) => {
     }
 
     await db.execute('DELETE FROM users WHERE id = ?', [id]);
+    const ip = req.ip || req.connection.remoteAddress;
+    const userAgent = req.get('User-Agent');
+    await logActivity({
+      id_user: req.user.id, username: req.user.username,
+      action: 'delete', entity_type: 'user', entity_id: parseInt(id),
+      description: `Menghapus user: ${user.username} (${user.nama})`,
+      ip_address: ip, user_agent: userAgent,
+    });
+
     res.json({ message: 'User berhasil dihapus' });
   } catch (error) {
     res.status(500).json({ message: 'Gagal menghapus user', error: error.message });

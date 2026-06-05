@@ -5,6 +5,7 @@ const { getDatabase } = require('../database');
 const { generateToken, authenticateToken } = require('../middleware/auth');
 
 const { generateCaptcha, validateCaptcha } = require('../helpers/captchaHelper');
+const { logActivity } = require('../helpers/activityLogHelper');
 
 // Helper untuk log login ke database
 async function logLoginToDb({ username, status, alasan, ip, userAgent }) {
@@ -60,6 +61,18 @@ router.post('/login', async (req, res) => {
     }
 
     await logLoginToDb({ username, status: 'sukses', alasan: 'Login berhasil', ip, userAgent });
+
+    // Catat ke activity log
+    await logActivity({
+      id_user: user.id,
+      username: user.username,
+      action: 'login',
+      entity_type: 'user',
+      entity_id: user.id,
+      description: `Login berhasil sebagai ${user.role}`,
+      ip_address: ip,
+      user_agent: userAgent,
+    });
 
     const token = generateToken(user);
 

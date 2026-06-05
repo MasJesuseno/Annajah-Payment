@@ -7,6 +7,7 @@ const ExcelJS = require('exceljs');
 const { getDatabase } = require('../database');
 const { authenticateToken } = require('../middleware/auth');
 const { handleError } = require('../helpers/errorHandler');
+const { logActivity } = require('../helpers/activityLogHelper');
 
 router.use(authenticateToken);
 
@@ -641,6 +642,15 @@ router.post('/', async (req, res) => {
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [nis, nisn || null, nama, jenis_kelamin || null, tempat_lahir || null, sanitizeDate(tanggal_lahir), alamat || null, no_telp || null, email || null, null, id_kelas || null, status || 'aktif', asal_sekolah || null, alamat_sekolah || null, kota_asal_sekolah || null, universitas || null, jurusan || null]);
 
+    const ip = req.ip || req.connection.remoteAddress;
+    const userAgent = req.get('User-Agent');
+    await logActivity({
+      id_user: req.user.id, username: req.user.username,
+      action: 'create', entity_type: 'siswa', entity_id: result.insertId,
+      description: `Menambah siswa: ${nama} (NIS: ${nis})`,
+      ip_address: ip, user_agent: userAgent,
+    });
+
     res.status(201).json({ id: result.insertId, message: 'Siswa berhasil ditambahkan' });
   } catch (error) {
     handleError(error, req, res, 'Gagal menambah siswa');
@@ -668,6 +678,15 @@ router.put('/:id', async (req, res) => {
       WHERE id=?
     `, [nis, nisn || null, nama, jenis_kelamin || null, tempat_lahir || null, sanitizeDate(tanggal_lahir), alamat || null, no_telp || null, email || null, id_kelas || null, status || 'aktif', asal_sekolah || null, alamat_sekolah || null, kota_asal_sekolah || null, universitas || null, jurusan || null, req.params.id]);
     // NOTE: foto tidak diupdate di sini, gunakan PUT /:id/foto
+
+    const ip = req.ip || req.connection.remoteAddress;
+    const userAgent = req.get('User-Agent');
+    await logActivity({
+      id_user: req.user.id, username: req.user.username,
+      action: 'update', entity_type: 'siswa', entity_id: parseInt(req.params.id),
+      description: `Mengupdate siswa: ${nama} (NIS: ${nis})`,
+      ip_address: ip, user_agent: userAgent,
+    });
 
     res.json({ message: 'Siswa berhasil diupdate' });
   } catch (error) {
@@ -743,6 +762,16 @@ router.delete('/:id', async (req, res) => {
     }
 
     await db.execute('DELETE FROM siswa WHERE id = ?', [req.params.id]);
+
+    const ip = req.ip || req.connection.remoteAddress;
+    const userAgent = req.get('User-Agent');
+    await logActivity({
+      id_user: req.user.id, username: req.user.username,
+      action: 'delete', entity_type: 'siswa', entity_id: parseInt(req.params.id),
+      description: `Menghapus siswa ID: ${req.params.id}${rows[0]?.nama ? ' (' + rows[0].nama + ')' : ''}`,
+      ip_address: ip, user_agent: userAgent,
+    });
+
     res.json({ message: 'Siswa berhasil dihapus' });
   } catch (error) {
     handleError(error, req, res, 'Gagal menghapus siswa');

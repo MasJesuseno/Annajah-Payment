@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { getDatabase } = require('../database');
 const { authenticateToken } = require('../middleware/auth');
+const { logActivity } = require('../helpers/activityLogHelper');
 
 router.use(authenticateToken);
 
@@ -164,10 +165,23 @@ router.post('/', async (req, res) => {
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [id_siswa || null, id_jenis_pembayaran, jumlah_bayar, bulan_bayar || null, keterangan || null, tanggal_bayar || null, req.user.id, no_kwitansi, jenis_transaksi || 'Masuk']);
 
+    const ip = req.ip || req.connection.remoteAddress;
+    const userAgent = req.get('User-Agent');
+    const trxType = jenis_transaksi || 'Masuk';
+    const desc = trxType === 'Masuk'
+      ? `Pembayaran: Rp ${jumlah_bayar.toLocaleString('id-ID')} (${no_kwitansi || '-'})`
+      : `Pengeluaran: Rp ${jumlah_bayar.toLocaleString('id-ID')}`;
+    await logActivity({
+      id_user: req.user.id, username: req.user.username,
+      action: 'create', entity_type: 'transaksi', entity_id: result.insertId,
+      description: desc,
+      ip_address: ip, user_agent: userAgent,
+    });
+
     res.status(201).json({
       id: result.insertId,
       no_kwitansi,
-      message: (jenis_transaksi || 'Masuk') === 'Masuk' ? 'Pembayaran berhasil dicatat' : 'Pengeluaran berhasil dicatat'
+      message: trxType === 'Masuk' ? 'Pembayaran berhasil dicatat' : 'Pengeluaran berhasil dicatat'
     });
   } catch (error) {
     res.status(500).json({ message: 'Terjadi kesalahan', error: error.message });
@@ -196,6 +210,15 @@ router.put('/:id', async (req, res) => {
       WHERE id = ?
     `, [id_jenis_pembayaran, jumlah_bayar, bulan_bayar || null, keterangan || null, tanggal_bayar || new Date().toISOString().split('T')[0], jenis_transaksi || 'Masuk', req.params.id]);
 
+    const ip = req.ip || req.connection.remoteAddress;
+    const userAgent = req.get('User-Agent');
+    await logActivity({
+      id_user: req.user.id, username: req.user.username,
+      action: 'update', entity_type: 'transaksi', entity_id: parseInt(req.params.id),
+      description: `Mengupdate transaksi ID: ${req.params.id}`,
+      ip_address: ip, user_agent: userAgent,
+    });
+
     res.json({ message: 'Transaksi berhasil diperbarui' });
   } catch (error) {
     res.status(500).json({ message: 'Terjadi kesalahan', error: error.message });
@@ -207,6 +230,15 @@ router.delete('/:id', async (req, res) => {
   try {
     const db = await getDatabase();
     await db.execute('DELETE FROM transaksi WHERE id = ?', [req.params.id]);
+    const ip = req.ip || req.connection.remoteAddress;
+    const userAgent = req.get('User-Agent');
+    await logActivity({
+      id_user: req.user.id, username: req.user.username,
+      action: 'delete', entity_type: 'transaksi', entity_id: parseInt(req.params.id),
+      description: `Menghapus transaksi ID: ${req.params.id}`,
+      ip_address: ip, user_agent: userAgent,
+    });
+
     res.json({ message: 'Transaksi berhasil dihapus' });
   } catch (error) {
     res.status(500).json({ message: 'Terjadi kesalahan', error: error.message });

@@ -6,6 +6,7 @@ const multer = require('multer');
 const ExcelJS = require('exceljs');
 const { getDatabase } = require('../database');
 const { authenticateToken } = require('../middleware/auth');
+const { logActivity } = require('../helpers/activityLogHelper');
 
 router.use(authenticateToken);
 
@@ -121,6 +122,7 @@ router.post('/', async (req, res) => {
       WHERE ns.id = ?
     `, [result.insertId]);
 
+    await logActivity(req, 'Tambah', 'Nilai Siswa', result.insertId, `Menambah nilai: ${tahun_pelajaran}`);
     res.status(201).json(newRow[0]);
   } catch (error) {
     res.status(500).json({ message: 'Gagal menambah nilai siswa', error: error.message });
@@ -164,6 +166,7 @@ router.put('/:id', async (req, res) => {
       WHERE ns.id = ?
     `, [req.params.id]);
 
+    await logActivity(req, 'Ubah', 'Nilai Siswa', req.params.id, `Mengubah nilai #${req.params.id}`);
     res.json(updated[0]);
   } catch (error) {
     res.status(500).json({ message: 'Gagal mengupdate nilai siswa', error: error.message });
@@ -178,11 +181,14 @@ router.delete('/:id', async (req, res) => {
     if (!existing[0]) return res.status(404).json({ message: 'Data tidak ditemukan' });
 
     await db.execute('DELETE FROM nilai_siswa WHERE id = ?', [req.params.id]);
+    await logActivity(req, 'Hapus', 'Nilai Siswa', req.params.id, `Menghapus nilai #${req.params.id}`);
     res.json({ message: 'Nilai siswa berhasil dihapus' });
   } catch (error) {
     res.status(500).json({ message: 'Gagal menghapus nilai siswa', error: error.message });
   }
 });
+
+
 
 // GET /rekap — Rekap nilai per kelas dan periode
 router.get('/rekap', async (req, res) => {

@@ -6,10 +6,10 @@ const multer = require('multer');
 const ExcelJS = require('exceljs');
 const { getDatabase } = require('../database');
 const { authenticateToken } = require('../middleware/auth');
+const { logActivity } = require('../helpers/activityLogHelper');
 
 router.use(authenticateToken);
 
-// ─── Konfigurasi Multer untuk Import ───
 const uploadDir = path.join(__dirname, '..', 'uploads', 'temp');
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
@@ -100,6 +100,7 @@ router.post('/', async (req, res) => {
     const [newRow] = await db.execute('SELECT * FROM mata_pelajaran WHERE id = ?', [result.insertId]);
 
     res.status(201).json(newRow[0]);
+    await logActivity(req, 'Tambah', 'Mata Pelajaran', result.insertId, `Menambah mata pelajaran: ${nama_pelajaran}`);
   } catch (error) {
     res.status(500).json({ message: 'Gagal menambah mata pelajaran', error: error.message });
   }
@@ -126,6 +127,7 @@ router.put('/:id', async (req, res) => {
     const [updated] = await db.execute('SELECT * FROM mata_pelajaran WHERE id = ?', [req.params.id]);
 
     res.json(updated[0]);
+    await logActivity(req, 'Ubah', 'Mata Pelajaran', req.params.id, `Mengubah mata pelajaran #${req.params.id}`);
   } catch (error) {
     res.status(500).json({ message: 'Gagal mengupdate mata pelajaran', error: error.message });
   }
@@ -139,6 +141,7 @@ router.delete('/:id', async (req, res) => {
     if (!existing[0]) return res.status(404).json({ message: 'Data tidak ditemukan' });
 
     await db.execute('DELETE FROM mata_pelajaran WHERE id = ?', [req.params.id]);
+    await logActivity(req, 'Hapus', 'Mata Pelajaran', req.params.id, `Menghapus mata pelajaran #${req.params.id}`);
     res.json({ message: 'Mata pelajaran berhasil dihapus' });
   } catch (error) {
     res.status(500).json({ message: 'Gagal menghapus mata pelajaran', error: error.message });

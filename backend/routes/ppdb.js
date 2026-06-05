@@ -7,6 +7,7 @@ const { getSettings } = require('../helpers/pdfHelpers');
 const { enrichGps, formatAddress } = require('../helpers/geocodeHelper');
 const PDFDocument = require('pdfkit');
 const { validateCaptcha } = require('../helpers/captchaHelper');
+const { logActivity } = require('../helpers/activityLogHelper');
 const ExcelJS = require('exceljs');
 const path = require('path');
 const fs = require('fs');
@@ -259,6 +260,7 @@ router.post('/daftar', (req, res, next) => {
       }
     }
 
+    await logActivity(req, 'Tambah', 'PPDB', null, `Pendaftaran PPDB baru: ${no_pendaftaran} - ${nama_lengkap}`);
     res.status(201).json({
       message: 'Pendaftaran berhasil! Silakan catat nomor pendaftaran Anda.',
       no_pendaftaran,
@@ -1745,6 +1747,7 @@ router.put('/settings', async (req, res) => {
       conn.release();
     }
 
+    await logActivity(req, 'Ubah', 'PPDB', null, 'Menyimpan pengaturan PPDB');
     res.json({ message: 'Pengaturan PPDB berhasil disimpan' });
   } catch (error) {
     handleError(error, req, res, 'Gagal menyimpan pengaturan PPDB');
@@ -1803,6 +1806,7 @@ router.post('/:id/kirim-email', async (req, res) => {
     const emailSent = await sendStatusEmail(pendaftar, pendaftar.status, pendaftar.keterangan);
 
     if (emailSent) {
+      await logActivity(req, 'Ubah', 'PPDB', req.params.id, `Mengirim ulang email notifikasi PPDB ke ${pendaftar.email}`);
       res.json({ message: `Notifikasi email berhasil dikirim ulang ke ${pendaftar.email}` });
     } else {
       res.status(500).json({ message: 'Gagal mengirim email. Periksa konfigurasi SMTP di menu Pengaturan.' });
@@ -1890,6 +1894,7 @@ router.put('/:id', async (req, res) => {
       ]
     );
 
+    await logActivity(req, 'Ubah', 'PPDB', req.params.id, `Mengupdate data pendaftar PPDB #${req.params.id}`);
     res.json({ message: 'Data pendaftar berhasil diupdate' });
   } catch (error) {
     handleError(error, req, res, 'Gagal mengupdate data pendaftar');
@@ -1936,6 +1941,7 @@ router.put('/:id/foto', (req, res, next) => {
     // Simpan nama file di database
     await db.execute('UPDATE ppdb_pendaftar SET foto = ? WHERE id = ?', [req.file.filename, req.params.id]);
 
+    await logActivity(req, 'Ubah', 'PPDB', req.params.id, `Upload foto pendaftar PPDB #${req.params.id}`);
     res.json({
       message: 'Foto berhasil diupload',
       foto: req.file.filename,
@@ -1972,6 +1978,7 @@ router.delete('/:id/foto', async (req, res) => {
     // Update database
     await db.execute('UPDATE ppdb_pendaftar SET foto = NULL WHERE id = ?', [req.params.id]);
 
+    await logActivity(req, 'Hapus', 'PPDB', req.params.id, `Menghapus foto pendaftar PPDB #${req.params.id}`);
     res.json({ message: 'Foto berhasil dihapus' });
   } catch (error) {
     handleError(error, req, res, 'Gagal menghapus foto');
@@ -2329,6 +2336,7 @@ router.post('/:id/konversi-siswa', async (req, res) => {
       ['diterima', `Dikonversi ke siswa (NIS: ${nis})`, req.params.id]
     );
 
+    await logActivity(req, 'Tambah', 'PPDB', req.params.id, `Konversi pendaftar PPDB ke siswa (NIS: ${nis})`);
     res.json({
       message: 'Pendaftar berhasil dikonversi menjadi siswa',
       siswa_id: result.insertId,

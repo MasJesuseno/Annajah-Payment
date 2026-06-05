@@ -49,6 +49,8 @@ import DaftarNilaiSiswa from './pages/DaftarNilaiSiswa'
 import InputNilaiSiswa from './pages/InputNilaiSiswa'
 import RekapNilaiSiswa from './pages/RekapNilaiSiswa'
 import TahunAjaran from './pages/TahunAjaran'
+import RolePermissions from './pages/RolePermissions'
+import ActivityLog from './pages/ActivityLog'
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth()
@@ -63,19 +65,6 @@ function ProtectedRoute({ children }) {
     )
   }
   if (!user) return <Navigate to="/login" replace />
-  // Redirect guru ke halaman khusus guru
-  if (user.role === 'guru') {
-    const pathname = window.location.pathname
-    const guruPaths = ['/guru-dashboard', '/siswa-wali', '/profil-saya', '/kehadiran-wali', '/input-kehadiran-wali', '/kehadiran-guru-saya', '/daftar-kehadiran-saya', '/ekstrakurikuler/peserta', '/ekstrakurikuler/input-peserta', '/ekstrakurikuler/rekap', '/bimbingan-konseling', '/bimbingan-konseling/input', '/bimbingan-konseling/rekap', '/mata-pelajaran', '/periode-penilaian', '/nilai-siswa', '/nilai-siswa/input', '/nilai-siswa/rekap']
-    if (user.ppdb_access) {
-      guruPaths.push('/ppdb/admin', '/ppdb/pengaturan')
-    }
-    const isGuruPath = guruPaths.includes(pathname) || pathname.startsWith('/siswa-wali/')
-      || pathname.startsWith('/prestasi-siswa')
-    if (!isGuruPath) {
-      return <Navigate to="/guru-dashboard" replace />
-    }
-  }
   return children
 }
 
@@ -83,10 +72,20 @@ function PublicRoute({ children }) {
   const { user, loading } = useAuth()
   if (loading) return null
   if (user) {
-    if (user.role === 'guru') return <Navigate to="/guru-dashboard" replace />
-    return <Navigate to="/dashboard" replace />
+    // Guru diarahkan ke dashboard guru, bukan ke dashboard admin
+    const defaultPath = user.role === 'guru' ? '/guru-dashboard' : '/dashboard'
+    return <Navigate to={defaultPath} replace />
   }
   return children
+}
+
+// Komponen untuk redirect default berdasarkan role
+function DefaultRedirect() {
+  const { user, loading } = useAuth()
+  if (loading) return null
+  if (!user) return <Navigate to="/login" replace />
+  if (user.role === 'guru') return <Navigate to="/guru-dashboard" replace />
+  return <Navigate to="/dashboard" replace />
 }
 
 export default function App() {
@@ -103,7 +102,7 @@ export default function App() {
       <Route path="/" element={
         <ProtectedRoute><Layout /></ProtectedRoute>
       }>
-        <Route index element={<Navigate to="/dashboard" replace />} />
+        <Route index element={<DefaultRedirect />} />
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="guru-dashboard" element={<GuruDashboard />} />
         <Route path="siswa" element={<Siswa />} />
@@ -147,8 +146,10 @@ export default function App() {
         <Route path="nilai-siswa/input" element={<InputNilaiSiswa />} />
         <Route path="nilai-siswa/rekap" element={<RekapNilaiSiswa />} />
         <Route path="tahun-ajaran" element={<TahunAjaran />} />
+        <Route path="role-permissions" element={<RolePermissions />} />
+        <Route path="log-aktivitas" element={<ActivityLog />} />
       </Route>
-      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      <Route path="*" element={<DefaultRedirect />} />
     </Routes>
   )
 }

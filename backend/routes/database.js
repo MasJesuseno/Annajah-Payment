@@ -5,6 +5,7 @@ const path = require('path');
 const multer = require('multer');
 const { getDatabase, closeDatabase } = require('../database');
 const { authenticateToken } = require('../middleware/auth');
+const { logActivity } = require('../helpers/activityLogHelper');
 
 const BACKUP_DIR = path.join(__dirname, '..', 'backups');
 
@@ -127,6 +128,7 @@ router.post('/backup', async (req, res) => {
 
     const stat = fs.statSync(backupPath);
 
+    await logActivity(req, 'Tambah', 'Database', null, `Membuat backup database: ${backupFilename}`);
     res.json({
       message: 'Backup berhasil dibuat',
       filename: backupFilename,
@@ -243,6 +245,7 @@ router.post('/restore', upload.single('file'), async (req, res) => {
       tempFile = null;
     }
 
+    await logActivity(req, 'Ubah', 'Database', null, `Merestore database dari file: ${req.file?.originalname || 'unknown'}`);
     res.json({
       message: 'Database berhasil direstore',
       backupAuto: autoBackupFilename
@@ -258,7 +261,7 @@ router.post('/restore', upload.single('file'), async (req, res) => {
 });
 
 // DELETE /api/database/backup/:filename — Hapus file backup
-router.delete('/backup/:filename', (req, res) => {
+router.delete('/backup/:filename', async (req, res) => {
   try {
     const { filename } = req.params;
 
@@ -272,6 +275,7 @@ router.delete('/backup/:filename', (req, res) => {
     }
 
     fs.unlinkSync(filePath);
+    await logActivity(req, 'Hapus', 'Database', null, `Menghapus file backup: ${filename}`);
     res.json({ message: 'File backup berhasil dihapus', filename });
   } catch (error) {
     res.status(500).json({ message: 'Gagal menghapus backup', error: error.message });

@@ -3,6 +3,7 @@ const router = express.Router();
 const ExcelJS = require('exceljs');
 const { getDatabase } = require('../database');
 const { authenticateToken } = require('../middleware/auth');
+const { logActivity } = require('../helpers/activityLogHelper');
 
 router.use(authenticateToken);
 
@@ -256,6 +257,7 @@ router.post('/', async (req, res) => {
       WHERE bk.id = ?
     `, [result.insertId]);
 
+    await logActivity(req, 'Tambah', 'Bimbingan Konseling', result.insertId, `Menambah catatan BK untuk siswa`);
     res.status(201).json(newRow[0]);
   } catch (error) {
     res.status(500).json({ message: 'Gagal menambah data BK', error: error.message });
@@ -290,6 +292,7 @@ router.put('/:id', async (req, res) => {
       WHERE bk.id = ?
     `, [req.params.id]);
 
+    await logActivity(req, 'Ubah', 'Bimbingan Konseling', req.params.id, `Mengubah catatan BK #${req.params.id}`);
     res.json(updated[0]);
   } catch (error) {
     res.status(500).json({ message: 'Gagal mengupdate data BK', error: error.message });
@@ -304,6 +307,7 @@ router.delete('/:id', async (req, res) => {
     if (!existing[0]) return res.status(404).json({ message: 'Data tidak ditemukan' });
 
     await db.execute('DELETE FROM bimbingan_konseling WHERE id = ?', [req.params.id]);
+    await logActivity(req, 'Hapus', 'Bimbingan Konseling', req.params.id, `Menghapus catatan BK #${req.params.id}`);
     res.json({ message: 'Data BK berhasil dihapus' });
   } catch (error) {
     res.status(500).json({ message: 'Gagal menghapus data BK', error: error.message });

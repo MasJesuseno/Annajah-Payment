@@ -6,6 +6,7 @@ const multer = require('multer');
 const ExcelJS = require('exceljs');
 const { getDatabase } = require('../database');
 const { authenticateToken } = require('../middleware/auth');
+const { logActivity } = require('../helpers/activityLogHelper');
 
 router.use(authenticateToken);
 
@@ -451,6 +452,15 @@ router.post('/', async (req, res) => {
       'INSERT INTO jenis_pembayaran (nama_pembayaran, tahun_ajaran, nominal, periode, status, keterangan) VALUES (?, ?, ?, ?, ?, ?)',
       [nama_pembayaran, tahun_ajaran, nominal, periode || 'bulanan', status || 'aktif', keterangan || null]
     );
+    const ip = req.ip || req.connection.remoteAddress;
+    const userAgent = req.get('User-Agent');
+    await logActivity({
+      id_user: req.user.id, username: req.user.username,
+      action: 'create', entity_type: 'pembayaran', entity_id: result.insertId,
+      description: `Menambah jenis pembayaran: ${nama_pembayaran}`,
+      ip_address: ip, user_agent: userAgent,
+    });
+
     res.status(201).json({ id: result.insertId, message: 'Jenis pembayaran berhasil ditambahkan' });
   } catch (error) {
     res.status(500).json({ message: 'Terjadi kesalahan', error: error.message });
@@ -466,6 +476,15 @@ router.put('/:id', async (req, res) => {
       'UPDATE jenis_pembayaran SET nama_pembayaran=?, tahun_ajaran=?, nominal=?, periode=?, status=?, keterangan=? WHERE id=?',
       [nama_pembayaran, tahun_ajaran, nominal, periode, status || 'aktif', keterangan, req.params.id]
     );
+    const ip = req.ip || req.connection.remoteAddress;
+    const userAgent = req.get('User-Agent');
+    await logActivity({
+      id_user: req.user.id, username: req.user.username,
+      action: 'update', entity_type: 'pembayaran', entity_id: parseInt(req.params.id),
+      description: `Mengupdate jenis pembayaran: ${nama_pembayaran}`,
+      ip_address: ip, user_agent: userAgent,
+    });
+
     res.json({ message: 'Jenis pembayaran berhasil diupdate' });
   } catch (error) {
     res.status(500).json({ message: 'Terjadi kesalahan', error: error.message });
@@ -481,6 +500,15 @@ router.delete('/:id', async (req, res) => {
       return res.status(400).json({ message: 'Tidak dapat menghapus jenis pembayaran yang sudah memiliki transaksi' });
     }
     await db.execute('DELETE FROM jenis_pembayaran WHERE id = ?', [req.params.id]);
+    const ip = req.ip || req.connection.remoteAddress;
+    const userAgent = req.get('User-Agent');
+    await logActivity({
+      id_user: req.user.id, username: req.user.username,
+      action: 'delete', entity_type: 'pembayaran', entity_id: parseInt(req.params.id),
+      description: `Menghapus jenis pembayaran ID: ${req.params.id}`,
+      ip_address: ip, user_agent: userAgent,
+    });
+
     res.json({ message: 'Jenis pembayaran berhasil dihapus' });
   } catch (error) {
     res.status(500).json({ message: 'Terjadi kesalahan', error: error.message });

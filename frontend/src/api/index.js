@@ -406,5 +406,14 @@ export const createTahunAjaran = (data) => api.post('/tahun-ajaran', data)
 export const updateTahunAjaran = (id, data) => api.put(`/tahun-ajaran/${id}`, data)
 export const deleteTahunAjaran = (id) => api.delete(`/tahun-ajaran/${id}`)
 
+// Role Permissions
+export const getRolePermissions = () => api.get('/role-permissions')
+export const getRolePermissionsByRole = (role) => api.get(`/role-permissions/${role}`)
+export const updateRolePermissions = (role, data) => api.put(`/role-permissions/${role}`, data)
+
+// Activity Log
+export const getActivityLog = (params) => api.get('/activity-log', { params })
+export const createActivityLog = (data) => api.post('/activity-log', data)
+
 export default api
 

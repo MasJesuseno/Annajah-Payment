@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { getDatabase } = require('../database');
 const { authenticateToken } = require('../middleware/auth');
+const { logActivity } = require('../helpers/activityLogHelper');
 
 router.use(authenticateToken);
 
@@ -47,6 +48,7 @@ router.post('/', async (req, res) => {
     );
 
     const [newRow] = await db.execute('SELECT * FROM tahun_ajaran WHERE id = ?', [result.insertId]);
+    await logActivity(req, 'Tambah', 'Tahun Ajaran', result.insertId, `Menambah tahun ajaran: ${tahun_ajaran}`);
     res.status(201).json(newRow[0]);
   } catch (error) {
     if (error.code === 'ER_DUP_ENTRY') {
@@ -80,6 +82,7 @@ router.put('/:id', async (req, res) => {
     );
 
     const [updated] = await db.execute('SELECT * FROM tahun_ajaran WHERE id = ?', [req.params.id]);
+    await logActivity(req, 'Ubah', 'Tahun Ajaran', req.params.id, `Mengubah tahun ajaran #${req.params.id}`);
     res.json(updated[0]);
   } catch (error) {
     if (error.code === 'ER_DUP_ENTRY') {
@@ -99,6 +102,7 @@ router.delete('/:id', async (req, res) => {
       return res.status(400).json({ message: 'Tidak dapat menghapus tahun ajaran yang sedang aktif' });
     }
     await db.execute('DELETE FROM tahun_ajaran WHERE id = ?', [req.params.id]);
+    await logActivity(req, 'Hapus', 'Tahun Ajaran', req.params.id, `Menghapus tahun ajaran #${req.params.id}`);
     res.json({ message: 'Tahun ajaran berhasil dihapus' });
   } catch (error) {
     res.status(500).json({ message: 'Gagal menghapus tahun ajaran', error: error.message });

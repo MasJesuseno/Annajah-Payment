@@ -4,6 +4,7 @@ const { getDatabase } = require('../database');
 const { authenticateToken } = require('../middleware/auth');
 const { handleError } = require('../helpers/errorHandler');
 const { enrichGps, formatAddress } = require('../helpers/geocodeHelper');
+const { logActivity } = require('../helpers/activityLogHelper');
 
 router.use(authenticateToken);
 
@@ -251,6 +252,7 @@ router.post('/absen-masuk', async (req, res) => {
       }
     } catch {}
 
+    await logActivity(req, 'Tambah', 'Kehadiran Guru', result.insertId, 'Absen masuk guru');
     res.status(201).json({
       id: result.insertId,
       message: 'Absen masuk berhasil',
@@ -314,6 +316,7 @@ router.put('/absen-keluar/:id', async (req, res) => {
       }
     } catch {}
 
+    await logActivity(req, 'Ubah', 'Kehadiran Guru', req.params.id, 'Absen keluar guru');
     res.json({
       message: 'Absen keluar berhasil',
       data: {
@@ -434,6 +437,7 @@ router.post('/', async (req, res) => {
       WHERE k.id = ?
     `, [result.insertId]);
 
+    await logActivity(req, 'Tambah', 'Kehadiran Guru', result.insertId, `Menambah kehadiran guru manual`);
     res.status(201).json({ message: 'Data kehadiran berhasil ditambahkan', data: created[0] });
   } catch (error) {
     handleError(error, req, res, 'Gagal menambah data kehadiran');
@@ -484,6 +488,7 @@ router.put('/:id', async (req, res) => {
       WHERE k.id = ?
     `, [id]);
 
+    await logActivity(req, 'Ubah', 'Kehadiran Guru', id, `Mengubah kehadiran guru #${id}`);
     res.json({ message: 'Data kehadiran berhasil diupdate', data: updated[0] });
   } catch (error) {
     handleError(error, req, res, 'Gagal mengupdate data kehadiran');

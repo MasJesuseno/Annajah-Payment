@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 import { getDashboard, getKehadiranTren, getPpdbStatistik, getKehadiranGuruTrend, getKehadiranGuruRingkasan } from '../api'
 import { Users, DollarSign, CalendarCheck, TrendingUp, ArrowUp, Receipt, School, CheckCircle, XCircle, Clock, UserCheck, UserX, Activity, BarChart3, UserPlus, Briefcase } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Line, PieChart, Pie, Cell } from 'recharts'
@@ -107,6 +109,16 @@ const statusCards = [
 ]
 
 export default function Dashboard() {
+  const { user } = useAuth()
+  const navigate = useNavigate()
+
+  // Proteksi: hanya admin & bendahara yang boleh lihat dashboard pembayaran
+  useEffect(() => {
+    if (user && user.role !== 'admin' && user.role !== 'bendahara') {
+      navigate('/guru-dashboard', { replace: true })
+    }
+  }, [user, navigate])
+
   const [dashboard, setDashboard] = useState(null)
   const [loading, setLoading] = useState(true)
   const [chartYear, setChartYear] = useState(new Date().getFullYear())

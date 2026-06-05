@@ -9,6 +9,7 @@ const nodemailer = require('nodemailer');
 const { getDatabase } = require('../database');
 const { getSettings } = require('../helpers/pdfHelpers');
 const { authenticateToken } = require('../middleware/auth');
+const { logActivity } = require('../helpers/activityLogHelper');
 
 router.use(authenticateToken);
 
@@ -840,7 +841,8 @@ router.post('/', (req, res) => {
         WHERE p.id = ?
       `, [result.insertId]);
 
-      res.status(201).json(newRow[0]);
+      await logActivity(req, 'Tambah', 'Prestasi Siswa', result.insertId, `Menambah prestasi: ${prestasi} - ${nama_agenda}`);
+    res.status(201).json(newRow[0]);
     } catch (error) {
       // Hapus file jika error database
       if (req.file) {
@@ -903,6 +905,7 @@ router.put('/:id', (req, res) => {
         WHERE p.id = ?
       `, [req.params.id]);
 
+      await logActivity(req, 'Ubah', 'Prestasi Siswa', req.params.id, `Mengubah prestasi #${req.params.id}`);
       res.json(updated[0]);
     } catch (error) {
       if (req.file) {
@@ -929,6 +932,7 @@ router.delete('/:id', async (req, res) => {
     }
 
     await db.execute('DELETE FROM prestasi_siswa WHERE id = ?', [req.params.id]);
+    await logActivity(req, 'Hapus', 'Prestasi Siswa', req.params.id, `Menghapus prestasi #${req.params.id}`);
     res.json({ message: 'Data prestasi berhasil dihapus' });
   } catch (error) {
     res.status(500).json({ message: 'Gagal menghapus data prestasi', error: error.message });

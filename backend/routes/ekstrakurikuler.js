@@ -3,6 +3,7 @@ const router = express.Router();
 const ExcelJS = require('exceljs');
 const { getDatabase } = require('../database');
 const { authenticateToken } = require('../middleware/auth');
+const { logActivity } = require('../helpers/activityLogHelper');
 
 router.use(authenticateToken);
 
@@ -418,6 +419,15 @@ router.post('/', async (req, res) => {
     );
 
     const [newRow] = await db.execute('SELECT * FROM ekstrakurikuler WHERE id = ?', [result.insertId]);
+    const ip = req.ip || req.connection.remoteAddress;
+    const userAgent = req.get('User-Agent');
+    await logActivity({
+      id_user: req.user.id, username: req.user.username,
+      action: 'create', entity_type: 'ekstrakurikuler', entity_id: result.insertId,
+      description: `Menambah ekstrakurikuler: ${nama}`,
+      ip_address: ip, user_agent: userAgent,
+    });
+
     res.status(201).json(newRow[0]);
   } catch (error) {
     res.status(500).json({ message: 'Gagal menambah ekstrakurikuler', error: error.message });
@@ -530,6 +540,15 @@ router.put('/:id', async (req, res) => {
     );
 
     const [updated] = await db.execute('SELECT * FROM ekstrakurikuler WHERE id = ?', [req.params.id]);
+    const ip = req.ip || req.connection.remoteAddress;
+    const userAgent = req.get('User-Agent');
+    await logActivity({
+      id_user: req.user.id, username: req.user.username,
+      action: 'update', entity_type: 'ekstrakurikuler', entity_id: parseInt(req.params.id),
+      description: `Mengupdate ekstrakurikuler ID: ${req.params.id}`,
+      ip_address: ip, user_agent: userAgent,
+    });
+
     res.json(updated[0]);
   } catch (error) {
     res.status(500).json({ message: 'Gagal mengupdate ekstrakurikuler', error: error.message });
@@ -544,6 +563,15 @@ router.delete('/:id', async (req, res) => {
     if (!existing[0]) return res.status(404).json({ message: 'Data tidak ditemukan' });
 
     await db.execute('DELETE FROM ekstrakurikuler WHERE id = ?', [req.params.id]);
+    const ip = req.ip || req.connection.remoteAddress;
+    const userAgent = req.get('User-Agent');
+    await logActivity({
+      id_user: req.user.id, username: req.user.username,
+      action: 'delete', entity_type: 'ekstrakurikuler', entity_id: parseInt(req.params.id),
+      description: `Menghapus ekstrakurikuler ID: ${req.params.id}`,
+      ip_address: ip, user_agent: userAgent,
+    });
+
     res.json({ message: 'Ekstrakurikuler berhasil dihapus' });
   } catch (error) {
     res.status(500).json({ message: 'Gagal menghapus ekstrakurikuler', error: error.message });
