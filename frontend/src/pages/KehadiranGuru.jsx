@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Calendar, Clock, MapPin, Search, RefreshCw, ChevronLeft, ChevronRight, Users, Edit3, X, Loader2, CheckCircle } from 'lucide-react'
+import { Calendar, Clock, MapPin, Search, RefreshCw, ChevronLeft, ChevronRight, Users, Edit3, X, Loader2, CheckCircle, Camera, CameraOff, LogIn, LogOut } from 'lucide-react'
 import { getKehadiranGuru, getGuru, createKehadiranGuru, updateKehadiranGuru, downloadExcelKehadiranGuru, backfillGpsKehadiranGuru } from '../api'
 import { parseGpsData } from '../utils/formatGps'
 import { useAuth } from '../context/AuthContext'
@@ -271,11 +271,11 @@ export default function KehadiranGuru() {
 
       {/* Table */}
       <div className="card p-0 overflow-hidden">          <div className="hidden sm:grid grid-cols-12 gap-4 px-5 py-3 bg-gray-50 border-b border-gray-100 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-          <div className="col-span-3">Nama Guru</div>
+          <div className="col-span-2">Nama Guru</div>
           <div className="col-span-2">Tanggal</div>
-          <div className="col-span-2">Jam Masuk</div>
-          <div className="col-span-2">Jam Keluar</div>
+          <div className="col-span-2">Jam</div>
           <div className="col-span-2">GPS</div>
+          <div className="col-span-3">Foto</div>
           <div className="col-span-1">Status</div>
         </div>
 
@@ -283,11 +283,11 @@ export default function KehadiranGuru() {
           <div className="divide-y divide-gray-50">
             {[...Array(5)].map((_, i) => (
               <div key={i} className="grid grid-cols-12 gap-4 px-5 py-4 animate-pulse">
+                <div className="col-span-2 h-4 bg-gray-200 rounded" />
+                <div className="col-span-2 h-4 bg-gray-200 rounded" />
+                <div className="col-span-2 h-4 bg-gray-200 rounded" />
+                <div className="col-span-2 h-4 bg-gray-200 rounded" />
                 <div className="col-span-3 h-4 bg-gray-200 rounded" />
-                <div className="col-span-2 h-4 bg-gray-200 rounded" />
-                <div className="col-span-2 h-4 bg-gray-200 rounded" />
-                <div className="col-span-2 h-4 bg-gray-200 rounded" />
-                <div className="col-span-2 h-4 bg-gray-200 rounded" />
                 <div className="col-span-1 h-4 bg-gray-200 rounded" />
               </div>
             ))}
@@ -302,7 +302,7 @@ export default function KehadiranGuru() {
           <div className="divide-y divide-gray-50">
             {data.map((item) => (
               <div key={item.id} className="grid grid-cols-12 gap-4 px-5 py-3.5 hover:bg-annajah-50/40 transition-all duration-150 items-center">
-                <div className="col-span-12 sm:col-span-3">
+                <div className="col-span-12 sm:col-span-2">
                   <span className="text-sm font-medium text-gray-800">{item.nama_guru}</span>
                   {item.nik && <span className="text-xs text-gray-400 ml-2">({item.nik})</span>}
                 </div>
@@ -310,22 +310,20 @@ export default function KehadiranGuru() {
                   <span className="text-sm text-gray-600">{formatTanggal(item.tanggal)}</span>
                 </div>
                 <div className="col-span-12 sm:col-span-2">
-                  {item.jam_masuk ? (
-                    <span className="inline-flex items-center gap-1 text-sm font-medium text-green-700 bg-green-50 px-2 py-0.5 rounded-full">
-                      <Clock className="w-3.5 h-3.5" /> {formatJam(item.jam_masuk)}
-                    </span>
-                  ) : (
-                    <span className="text-sm text-gray-400">-</span>
-                  )}
-                </div>
-                <div className="col-span-12 sm:col-span-2">
-                  {item.jam_keluar ? (
-                    <span className="inline-flex items-center gap-1 text-sm font-medium text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full">
-                      <Clock className="w-3.5 h-3.5" /> {formatJam(item.jam_keluar)}
-                    </span>
-                  ) : (
-                    <span className="text-sm text-gray-400">-</span>
-                  )}
+                  <div className="flex flex-col gap-0.5">
+                    {item.jam_masuk ? (
+                      <span className="inline-flex items-center gap-1 text-xs font-medium text-green-700 bg-green-50 px-2 py-0.5 rounded-full w-fit">
+                        <LogIn className="w-3 h-3" /> {formatJam(item.jam_masuk)}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-gray-400">-</span>
+                    )}
+                    {item.jam_keluar ? (
+                      <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full w-fit">
+                        <LogOut className="w-3 h-3" /> {formatJam(item.jam_keluar)}
+                      </span>
+                    ) : null}
+                  </div>
                 </div>
                 <div className="col-span-12 sm:col-span-2">
                   <div className="flex flex-col gap-0.5">
@@ -336,19 +334,54 @@ export default function KehadiranGuru() {
                         <>
                           {gpsMasuk ? (
                             <span className="text-[10px] text-gray-500 flex items-center gap-1" title={gpsMasuk.lat ? `(${gpsMasuk.lat}, ${gpsMasuk.lng})` : ''}>
-                              <MapPin className="w-3 h-3" /> Masuk: {gpsMasuk.display}
+                              <MapPin className="w-3 h-3" /> Msk: {gpsMasuk.display}
                             </span>
                           ) : (
                             <span className="text-[10px] text-gray-400">-</span>
                           )}
                           {gpsKeluar ? (
                             <span className="text-[10px] text-gray-500 flex items-center gap-1" title={gpsKeluar.lat ? `(${gpsKeluar.lat}, ${gpsKeluar.lng})` : ''}>
-                              <MapPin className="w-3 h-3" /> Keluar: {gpsKeluar.display}
+                              <MapPin className="w-3 h-3" /> Klr: {gpsKeluar.display}
                             </span>
                           ) : null}
                         </>
                       )
                     })()}
+                  </div>
+                </div>
+                <div className="col-span-12 sm:col-span-3">
+                  <div className="flex items-center gap-2">
+                    {item.foto_masuk ? (
+                      <div className="group relative" title="Foto Masuk">
+                        <img
+                          src={`/uploads/kehadiran-guru/${item.foto_masuk}`}
+                          alt="Foto masuk"
+                          className="w-9 h-9 rounded-lg object-cover border border-green-200 cursor-pointer"
+                          onClick={() => window.open(`/uploads/kehadiran-guru/${item.foto_masuk}`, '_blank')}
+                        />
+                        <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-green-500 rounded-full flex items-center justify-center">
+                          <LogIn className="w-2 h-2 text-white" />
+                        </span>
+                      </div>
+                    ) : null}
+                    {item.foto_keluar ? (
+                      <div className="group relative" title="Foto Keluar">
+                        <img
+                          src={`/uploads/kehadiran-guru/${item.foto_keluar}`}
+                          alt="Foto keluar"
+                          className="w-9 h-9 rounded-lg object-cover border border-amber-200 cursor-pointer"
+                          onClick={() => window.open(`/uploads/kehadiran-guru/${item.foto_keluar}`, '_blank')}
+                        />
+                        <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-amber-500 rounded-full flex items-center justify-center">
+                          <LogOut className="w-2 h-2 text-white" />
+                        </span>
+                      </div>
+                    ) : null}
+                    {!item.foto_masuk && !item.foto_keluar && (
+                      <span className="text-[10px] text-gray-400 flex items-center gap-1">
+                        <CameraOff className="w-3 h-3" /> Tanpa foto
+                      </span>
+                    )}
                   </div>
                 </div>
                 <div className="col-span-12 sm:col-span-1">
@@ -375,6 +408,7 @@ export default function KehadiranGuru() {
                   <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${statusColors[getStatusKehadiran(item)]}`}>
                     {getStatusKehadiran(item)}
                   </span>
+                  {item.foto_masuk && <span className="text-green-500"><Camera className="w-3 h-3 inline" /></span>}
                   <button
                     onClick={() => openEdit(item)}
                     className="p-1 rounded-lg hover:bg-annajah-100 text-annajah-400 hover:text-annajah-600 transition-all"

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Clock, MapPin, Search, RefreshCw, ChevronLeft, ChevronRight, Calendar, CheckCircle, XCircle, FileDown } from 'lucide-react'
+import { Clock, MapPin, Search, RefreshCw, ChevronLeft, ChevronRight, Calendar, CheckCircle, XCircle, FileDown, Camera, CameraOff, LogIn, LogOut } from 'lucide-react'
 import { getKehadiranGuruSaya, downloadExcelKehadiranGuru } from '../api'
 import { parseGpsData } from '../utils/formatGps'
 
@@ -174,7 +174,8 @@ export default function DaftarKehadiranSaya() {
           <div className="col-span-2">Jam Masuk</div>
           <div className="col-span-2">Jam Keluar</div>
           <div className="col-span-2">Status</div>
-          <div className="col-span-4">Lokasi GPS</div>
+          <div className="col-span-3">Lokasi GPS</div>
+          <div className="col-span-1">Foto</div>
         </div>
 
         {loading ? (
@@ -185,7 +186,8 @@ export default function DaftarKehadiranSaya() {
                 <div className="col-span-2 h-4 bg-gray-200 rounded" />
                 <div className="col-span-2 h-4 bg-gray-200 rounded" />
                 <div className="col-span-2 h-4 bg-gray-200 rounded" />
-                <div className="col-span-4 h-4 bg-gray-200 rounded" />
+                <div className="col-span-3 h-4 bg-gray-200 rounded" />
+                <div className="col-span-1 h-4 bg-gray-200 rounded" />
               </div>
             ))}
           </div>
@@ -235,7 +237,7 @@ export default function DaftarKehadiranSaya() {
                     </span>
                   </div>
                   {/* GPS */}
-                  <div className="col-span-6 sm:col-span-4 text-right sm:text-left">
+                  <div className="col-span-6 sm:col-span-3 text-right sm:text-left">
                     <div className="flex flex-col gap-0.5">
                       {(() => {
                         const gpsMasuk = parseGpsData(item.gps_masuk)
@@ -257,6 +259,32 @@ export default function DaftarKehadiranSaya() {
                           </>
                         )
                       })()}
+                    </div>
+                  </div>
+                  {/* Foto */}
+                  <div className="col-span-6 sm:col-span-1 text-right sm:text-left">
+                    <div className="flex items-center gap-1.5">
+                      {item.foto_masuk ? (
+                        <img
+                          src={`/uploads/kehadiran-guru/${item.foto_masuk}`}
+                          alt="Foto"
+                          className="w-7 h-7 rounded-lg object-cover border border-green-200 cursor-pointer"
+                          onClick={() => window.open(`/uploads/kehadiran-guru/${item.foto_masuk}`, '_blank')}
+                          title="Foto Masuk"
+                        />
+                      ) : null}
+                      {item.foto_keluar ? (
+                        <img
+                          src={`/uploads/kehadiran-guru/${item.foto_keluar}`}
+                          alt="Foto"
+                          className="w-7 h-7 rounded-lg object-cover border border-amber-200 cursor-pointer"
+                          onClick={() => window.open(`/uploads/kehadiran-guru/${item.foto_keluar}`, '_blank')}
+                          title="Foto Keluar"
+                        />
+                      ) : null}
+                      {!item.foto_masuk && !item.foto_keluar && (
+                        <CameraOff className="w-3.5 h-3.5 text-gray-300" />
+                      )}
                     </div>
                   </div>
                 </div>

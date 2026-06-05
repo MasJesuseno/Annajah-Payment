@@ -1,7 +1,9 @@
-import { useState, useEffect, useCallback } from 'react'
-import { Clock, MapPin, LogIn, LogOut, RefreshCw, History, CheckCircle, XCircle, Loader2, Navigation, ChevronLeft, ChevronRight } from 'lucide-react'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { Clock, MapPin, LogIn, LogOut, RefreshCw, History, CheckCircle, XCircle, Loader2, Navigation, ChevronLeft, ChevronRight, Camera, CameraOff, Image as ImageIcon } from 'lucide-react'
 import { getStatusKehadiranGuru, absenMasukGuru, absenKeluarGuru, getKehadiranGuruSaya } from '../api'
 import { parseGpsData } from '../utils/formatGps'
+
+const FOTO_BASE_URL = '/uploads/kehadiran-guru/'
 
 function formatTanggal(tgl) {
   if (!tgl) return '-'
@@ -15,6 +17,176 @@ function formatJam(jam) {
   return jam.slice(0, 5)
 }
 
+// Camera capture modal component
+function CameraModal({ mode, onCapture, onClose }) {
+  const videoRef = useRef(null)
+  const canvasRef = useRef(null)
+  const [stream, setStream] = useState(null)
+  const [capturedImage, setCapturedImage] = useState(null)
+  const [cameraError, setCameraError] = useState('')
+  const [loading, setLoading] = useState(true)
+
+  const startCamera = useCallback(async () => {
+    try {
+      setLoading(true)
+      setCameraError('')
+      const s = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
+        audio: false,
+      })
+      setStream(s)
+      if (videoRef.current) {
+        videoRef.current.srcObject = s
+      }
+    } catch (err) {
+      let msg = 'Tidak dapat mengakses kamera'
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        msg = 'Izin kamera ditolak. Izinkan akses kamera di browser.'
+      } else if (err.name === 'NotFoundError') {
+        msg = 'Kamera tidak ditemukan di perangkat ini.'
+      }
+      setCameraError(msg)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    startCamera()
+    return () => {
+      // Cleanup: stop all tracks
+      if (stream) {
+        stream.getTracks().forEach(t => t.stop())
+      }
+    }
+  }, [startCamera])
+
+  const handleCapture = () => {
+    if (!videoRef.current || !canvasRef.current) return
+    const video = videoRef.current
+    const canvas = canvasRef.current
+    canvas.width = video.videoWidth
+    canvas.height = video.videoHeight
+    canvas.getContext('2d').drawImage(video, 0, 0)
+    const imageData = canvas.toDataURL('image/jpeg', 0.7)
+    setCapturedImage(imageData)
+  }
+
+  const handleRetake = () => {
+    setCapturedImage(null)
+  }
+
+  const handleConfirm = () => {
+    if (capturedImage) {
+      onCapture(capturedImage)
+    }
+    // Stop camera
+    if (stream) {
+      stream.getTracks().forEach(t => t.stop())
+    }
+  }
+
+  const handleClose = () => {
+    if (stream) {
+      stream.getTracks().forEach(t => t.stop())
+    }
+    onClose()
+  }
+
+  const label = mode === 'masuk' ? 'Absen Masuk' : 'Absen Keluar'
+
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={handleClose}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden" onClick={(e) => e.stopPropagation()}>
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-gray-100">
+          <div className="flex items-center gap-2">
+            <Camera className="w-5 h-5 text-annajah-600" />
+            <h2 className="text-lg font-semibold text-gray-800">Foto {label}</h2>
+          </div>
+          <button onClick={handleClose} className="p-1.5 hover:bg-gray-100 rounded-lg transition-all">
+            <XCircle className="w-5 h-5 text-gray-400" />
+          </button>
+        </div>
+
+        {/* Camera / Preview */}
+        <div className="p-4">
+          {cameraError ? (
+            <div className="text-center py-10 space-y-3">
+              <CameraOff className="w-16 h-16 text-red-300 mx-auto" />
+              <p className="text-sm text-red-600 font-medium">{cameraError}</p>
+              <p className="text-xs text-gray-400">Atau, lanjutkan absen tanpa foto</p>
+              <div className="flex gap-3 justify-center pt-2">
+                <button onClick={startCamera} className="btn-secondary text-sm">
+                  Coba Lagi
+                </button>
+                <button onClick={() => { onCapture(null); handleClose() }} className="btn-primary text-sm">
+                  Lanjut Tanpa Foto
+                </button>
+              </div>
+            </div>
+          ) : !capturedImage ? (
+            <div className="relative bg-black rounded-xl overflow-hidden">
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                className="w-full aspect-[4/3] object-cover"
+              />
+              {loading && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                  <Loader2 className="w-8 h-8 animate-spin text-white" />
+                </div>
+              )}
+              <canvas ref={canvasRef} className="hidden" />
+            </div>
+          ) : (
+            <div className="relative rounded-xl overflow-hidden">
+              <img src={capturedImage} alt="Preview" className="w-full aspect-[4/3] object-cover" />
+              <div className="absolute top-2 right-2 bg-green-500 text-white text-xs font-semibold px-2 py-1 rounded-full flex items-center gap-1">
+                <CheckCircle className="w-3 h-3" /> Foto diambil
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Actions */}
+        {!cameraError && (
+          <div className="flex gap-3 p-4 border-t border-gray-100">
+            {!capturedImage ? (
+              <>
+                <button onClick={handleCapture} disabled={loading} className="btn-primary flex-1 flex items-center justify-center gap-2 py-3">
+                  {loading ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <Camera className="w-5 h-5" />
+                  )}
+                  {loading ? 'Menyiapkan kamera...' : 'Ambil Foto'}
+                </button>
+                <button onClick={() => { onCapture(null); handleClose() }} className="btn-secondary flex-1">
+                  Lewati
+                </button>
+              </>
+            ) : (
+              <>
+                <button onClick={handleConfirm} className="btn-primary flex-1 flex items-center justify-center gap-2 py-3">
+                  <CheckCircle className="w-5 h-5" />
+                  Gunakan Foto Ini
+                </button>
+                <button onClick={handleRetake} className="btn-secondary flex-1 flex items-center justify-center gap-2">
+                  <Camera className="w-4 h-4" />
+                  Ulang
+                </button>
+              </>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export default function KehadiranGuruSaya() {
   const [todayStatus, setTodayStatus] = useState(null)
   const [loadingStatus, setLoadingStatus] = useState(true)
@@ -23,6 +195,10 @@ export default function KehadiranGuruSaya() {
   const [gpsCoords, setGpsCoords] = useState(null)
   const [gpsError, setGpsError] = useState('')
   const [message, setMessage] = useState({ type: '', text: '' })
+
+  // Camera modal
+  const [showCamera, setShowCamera] = useState(false)
+  const [cameraMode, setCameraMode] = useState('masuk') // 'masuk' or 'keluar'
 
   // History
   const [history, setHistory] = useState([])
@@ -102,7 +278,30 @@ export default function KehadiranGuruSaya() {
     getLocation()
   }, [getLocation])
 
-  const handleAbsenMasuk = async () => {
+  // Open camera modal before absen
+  const handleAbsenMasukClick = () => {
+    setCameraMode('masuk')
+    setShowCamera(true)
+  }
+
+  const handleAbsenKeluarClick = () => {
+    setCameraMode('keluar')
+    setShowCamera(true)
+  }
+
+  // Called after camera captures (or skips) a photo
+  const handleCameraCapture = async (fotoBase64) => {
+    setShowCamera(false)
+
+    // Proceed with absen
+    if (cameraMode === 'masuk') {
+      await doAbsenMasuk(fotoBase64)
+    } else {
+      await doAbsenKeluar(fotoBase64)
+    }
+  }
+
+  const doAbsenMasuk = async (fotoBase64) => {
     if (submitting) return
     try {
       setSubmitting(true)
@@ -110,8 +309,12 @@ export default function KehadiranGuruSaya() {
       if (navigator.geolocation) {
         gps = await getLocation()
       }
-      await absenMasukGuru({ gps_masuk: gps || undefined })
-      showMessage('success', 'Absen masuk berhasil!')
+      const payload = { gps_masuk: gps || undefined }
+      if (fotoBase64) {
+        payload.foto_masuk = fotoBase64
+      }
+      await absenMasukGuru(payload)
+      showMessage('success', 'Absen masuk berhasil dengan foto!')
       await loadStatus()
       await loadHistory(1)
     } catch (err) {
@@ -122,7 +325,7 @@ export default function KehadiranGuruSaya() {
     }
   }
 
-  const handleAbsenKeluar = async () => {
+  const doAbsenKeluar = async (fotoBase64) => {
     if (submitting || !todayStatus?.data?.id) return
     try {
       setSubmitting(true)
@@ -130,8 +333,12 @@ export default function KehadiranGuruSaya() {
       if (navigator.geolocation) {
         gps = await getLocation()
       }
-      await absenKeluarGuru(todayStatus.data.id, { gps_keluar: gps || undefined })
-      showMessage('success', 'Absen keluar berhasil!')
+      const payload = { gps_keluar: gps || undefined }
+      if (fotoBase64) {
+        payload.foto_keluar = fotoBase64
+      }
+      await absenKeluarGuru(todayStatus.data.id, payload)
+      showMessage('success', 'Absen keluar berhasil dengan foto!')
       await loadStatus()
       await loadHistory(1)
     } catch (err) {
@@ -148,7 +355,7 @@ export default function KehadiranGuruSaya() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Absen Kehadiran</h1>
-          <p className="text-gray-500 text-sm mt-1">Absen masuk & keluar dengan lokasi GPS</p>
+          <p className="text-gray-500 text-sm mt-1">Absen masuk & keluar dengan foto dan lokasi GPS</p>
         </div>
         <button onClick={() => { loadStatus(); loadHistory(page) }} className="btn-secondary text-sm flex items-center gap-2">
           <RefreshCw className="w-4 h-4" /> Refresh
@@ -190,6 +397,11 @@ export default function KehadiranGuruSaya() {
                         <MapPin className="w-3 h-3 inline mr-0.5" /> {todayStatus.data.gps_masuk.display}
                       </span>
                     )}
+                    {todayStatus.data?.foto_masuk && (
+                      <span className="ml-3 text-xs text-green-500">
+                        <Camera className="w-3 h-3 inline mr-0.5" /> Ada foto
+                      </span>
+                    )}
                   </p>
                 )}
                 {todayStatus.sudah_keluar ? (
@@ -198,6 +410,11 @@ export default function KehadiranGuruSaya() {
                     {todayStatus.data?.gps_keluar?.display && (
                       <span className="ml-3 text-xs text-gray-400">
                         <MapPin className="w-3 h-3 inline mr-0.5" /> {todayStatus.data.gps_keluar.display}
+                      </span>
+                    )}
+                    {todayStatus.data?.foto_keluar && (
+                      <span className="ml-3 text-xs text-amber-500">
+                        <Camera className="w-3 h-3 inline mr-0.5" /> Ada foto
                       </span>
                     )}
                   </p>
@@ -242,7 +459,7 @@ export default function KehadiranGuruSaya() {
             <div className="flex gap-3">
               {!todayStatus?.sudah_absen ? (
                 <button
-                  onClick={handleAbsenMasuk}
+                  onClick={handleAbsenMasukClick}
                   disabled={submitting}
                   className="btn-primary flex items-center gap-2 px-6 py-3 text-base"
                 >
@@ -255,7 +472,7 @@ export default function KehadiranGuruSaya() {
                 </button>
               ) : !todayStatus?.sudah_keluar ? (
                 <button
-                  onClick={handleAbsenKeluar}
+                  onClick={handleAbsenKeluarClick}
                   disabled={submitting}
                   className="bg-amber-500 hover:bg-amber-600 text-white flex items-center gap-2 px-6 py-3 rounded-xl text-base font-medium transition-all disabled:opacity-50"
                 >
@@ -278,6 +495,15 @@ export default function KehadiranGuruSaya() {
         </div>
       </div>
 
+      {/* Camera Modal */}
+      {showCamera && (
+        <CameraModal
+          mode={cameraMode}
+          onCapture={handleCameraCapture}
+          onClose={() => setShowCamera(false)}
+        />
+      )}
+
       {/* History */}
       <div className="flex items-center gap-2">
         <History className="w-5 h-5 text-gray-500" />
@@ -286,18 +512,20 @@ export default function KehadiranGuruSaya() {
 
       <div className="card p-0 overflow-hidden">
         <div className="hidden sm:grid grid-cols-12 gap-4 px-5 py-3 bg-gray-50 border-b border-gray-100 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-          <div className="col-span-3">Tanggal</div>
-          <div className="col-span-3">Jam Masuk</div>
-          <div className="col-span-3">Jam Keluar</div>
+          <div className="col-span-2">Tanggal</div>
+          <div className="col-span-2">Jam Masuk</div>
+          <div className="col-span-2">Jam Keluar</div>
           <div className="col-span-3">Lokasi</div>
+          <div className="col-span-3">Foto</div>
         </div>
 
         {loadingHistory ? (
           <div className="divide-y divide-gray-50">
             {[...Array(4)].map((_, i) => (
               <div key={i} className="grid grid-cols-12 gap-4 px-5 py-4 animate-pulse">
-                <div className="col-span-3 h-4 bg-gray-200 rounded" />
-                <div className="col-span-3 h-4 bg-gray-200 rounded" />
+                <div className="col-span-2 h-4 bg-gray-200 rounded" />
+                <div className="col-span-2 h-4 bg-gray-200 rounded" />
+                <div className="col-span-2 h-4 bg-gray-200 rounded" />
                 <div className="col-span-3 h-4 bg-gray-200 rounded" />
                 <div className="col-span-3 h-4 bg-gray-200 rounded" />
               </div>
@@ -312,10 +540,10 @@ export default function KehadiranGuruSaya() {
           <div className="divide-y divide-gray-50">
             {history.map((item) => (
               <div key={item.id} className="grid grid-cols-12 gap-4 px-5 py-3.5 hover:bg-annajah-50/40 transition-all duration-150 items-center">
-                <div className="col-span-12 sm:col-span-3">
+                <div className="col-span-12 sm:col-span-2">
                   <span className="text-sm font-medium text-gray-700">{formatTanggal(item.tanggal)}</span>
                 </div>
-                <div className="col-span-12 sm:col-span-3">
+                <div className="col-span-12 sm:col-span-2">
                   {item.jam_masuk ? (
                     <span className="text-sm font-medium text-green-700 bg-green-50 px-2 py-0.5 rounded-full inline-flex items-center gap-1">
                       <Clock className="w-3.5 h-3.5" /> {formatJam(item.jam_masuk)}
@@ -324,7 +552,7 @@ export default function KehadiranGuruSaya() {
                     <span className="text-sm text-gray-400">-</span>
                   )}
                 </div>
-                <div className="col-span-12 sm:col-span-3">
+                <div className="col-span-12 sm:col-span-2">
                   {item.jam_keluar ? (
                     <span className="text-sm font-medium text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full inline-flex items-center gap-1">
                       <Clock className="w-3.5 h-3.5" /> {formatJam(item.jam_keluar)}
@@ -356,21 +584,56 @@ export default function KehadiranGuruSaya() {
                     })()}
                   </div>
                 </div>
-
-                {/* Mobile */}
-                <div className="col-span-12 sm:hidden -mt-1">
-                  <div className="flex flex-wrap gap-2 text-xs text-gray-400">
-                    {(() => {
-                      const gpsMasuk = parseGpsData(item.gps_masuk)
-                      const gpsKeluar = parseGpsData(item.gps_keluar)
-                      return (
-                        <>
-                          {gpsMasuk && <span><MapPin className="w-3 h-3 inline" /> Masuk: {gpsMasuk.display}</span>}
-                          {gpsKeluar && <span><MapPin className="w-3 h-3 inline" /> Keluar: {gpsKeluar.display}</span>}
-                        </>
-                      )
-                    })()}
+                <div className="col-span-12 sm:col-span-3">
+                  <div className="flex items-center gap-2">
+                    {item.foto_masuk ? (
+                      <div className="group relative" title="Foto Masuk">
+                        <img
+                          src={`${FOTO_BASE_URL}${item.foto_masuk}`}
+                          alt="Foto masuk"
+                          className="w-9 h-9 rounded-lg object-cover border border-green-200 cursor-pointer"
+                          onClick={() => window.open(`${FOTO_BASE_URL}${item.foto_masuk}`, '_blank')}
+                        />
+                        <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-green-500 rounded-full flex items-center justify-center">
+                          <LogIn className="w-2 h-2 text-white" />
+                        </span>
+                      </div>
+                    ) : null}
+                    {item.foto_keluar ? (
+                      <div className="group relative" title="Foto Keluar">
+                        <img
+                          src={`${FOTO_BASE_URL}${item.foto_keluar}`}
+                          alt="Foto keluar"
+                          className="w-9 h-9 rounded-lg object-cover border border-amber-200 cursor-pointer"
+                          onClick={() => window.open(`${FOTO_BASE_URL}${item.foto_keluar}`, '_blank')}
+                        />
+                        <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-amber-500 rounded-full flex items-center justify-center">
+                          <LogOut className="w-2 h-2 text-white" />
+                        </span>
+                      </div>
+                    ) : null}
+                    {!item.foto_masuk && !item.foto_keluar && (
+                      <span className="text-[10px] text-gray-400 flex items-center gap-1">
+                        <CameraOff className="w-3 h-3" /> Tanpa foto
+                      </span>
+                    )}
                   </div>
+                </div>
+
+                {/* Mobile detail */}
+                <div className="col-span-12 sm:hidden -mt-1 flex flex-wrap gap-2 text-xs text-gray-400">
+                  {(() => {
+                    const gpsMasuk = parseGpsData(item.gps_masuk)
+                    const gpsKeluar = parseGpsData(item.gps_keluar)
+                    return (
+                      <>
+                        {gpsMasuk && <span><MapPin className="w-3 h-3 inline" /> Masuk: {gpsMasuk.display}</span>}
+                        {gpsKeluar && <span><MapPin className="w-3 h-3 inline" /> Keluar: {gpsKeluar.display}</span>}
+                      </>
+                    )
+                  })()}
+                  {item.foto_masuk && <span className="text-green-500"><Camera className="w-3 h-3 inline" /> Foto masuk</span>}
+                  {item.foto_keluar && <span className="text-amber-500"><Camera className="w-3 h-3 inline" /> Foto keluar</span>}
                 </div>
               </div>
             ))}

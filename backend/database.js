@@ -142,6 +142,14 @@ async function initDatabase() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
 
+    // Add foto_masuk & foto_keluar columns to kehadiran_guru if not exists (for migration)
+    try {
+      await conn.execute(`ALTER TABLE kehadiran_guru ADD COLUMN foto_masuk VARCHAR(255) DEFAULT NULL`);
+    } catch (e) {}
+    try {
+      await conn.execute(`ALTER TABLE kehadiran_guru ADD COLUMN foto_keluar VARCHAR(255) DEFAULT NULL`);
+    } catch (e) {}
+
     // Add id_wali column to kelas if not exists
     try {
       await conn.execute(`ALTER TABLE kelas ADD COLUMN id_wali INT DEFAULT NULL`);
@@ -296,6 +304,8 @@ async function initDatabase() {
         jam_keluar TIME DEFAULT NULL,
         gps_masuk VARCHAR(500) DEFAULT NULL,
         gps_keluar VARCHAR(500) DEFAULT NULL,
+        foto_masuk VARCHAR(255) DEFAULT NULL,
+        foto_keluar VARCHAR(255) DEFAULT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (id_guru) REFERENCES guru(id) ON DELETE CASCADE
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci

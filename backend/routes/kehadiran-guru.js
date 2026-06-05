@@ -1,5 +1,8 @@
 const express = require('express');
 const router = express.Router();
+const path = require('path');
+const fs = require('fs');
+const multer = require('multer');
 const { getDatabase } = require('../database');
 const { authenticateToken } = require('../middleware/auth');
 const { handleError } = require('../helpers/errorHandler');
@@ -7,6 +10,32 @@ const { enrichGps, formatAddress } = require('../helpers/geocodeHelper');
 const { logActivity } = require('../helpers/activityLogHelper');
 
 router.use(authenticateToken);
+
+// ─── Konfigurasi Multer untuk Upload Foto Absen ───
+const fotoDir = path.join(__dirname, '..', 'uploads', 'kehadiran-guru');
+if (!fs.existsSync(fotoDir)) {
+  fs.mkdirSync(fotoDir, { recursive: true });
+}
+
+const fotoStorage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, fotoDir),
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    cb(null, `absen_${Date.now()}_${Math.random().toString(36).substring(2, 8)}${ext}`);
+  },
+});
+
+const uploadFoto = multer({
+  storage: fotoStorage,
+  limits: { fileSize: 2 * 1024 * 1024 }, // 2MB max
+  fileFilter: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (!['.jpg', '.jpeg', '.png', '.gif', '.webp'].includes(ext)) {
+      return cb(new Error('Format foto tidak didukung. Gunakan JPG, PNG, GIF, atau WebP.'));
+    }
+    cb(null, true);
+  },
+});
 
 // Helper: get guru_id for the current user (from DB since JWT doesn't include it)
 async function getGuruId(db, userId) {
@@ -166,7 +195,7 @@ router.get('/status-hari-ini', async (req, res) => {
     const today = new Date().toISOString().split('T')[0];
 
     const [rows] = await db.execute(
-      'SELECT id, jam_masuk, jam_keluar, gps_masuk, gps_keluar FROM kehadiran_guru WHERE id_guru = ? AND tanggal = ?',
+      'SELECT id, jam_masuk, jam_keluar, gps_masuk, gps_keluar, foto_masuk, foto_keluar FROM kehadiran_guru WHERE id_guru = ? AND tanggal = ?',
       [idGuru, today]
     );
 
@@ -197,6 +226,8 @@ router.get('/status-hari-ini', async (req, res) => {
           jam_keluar: rows[0].jam_keluar ? rows[0].jam_keluar.slice(0, 5) : null,
           gps_masuk: parseGps(rows[0].gps_masuk),
           gps_keluar: parseGps(rows[0].gps_keluar),
+          foto_masuk: rows[0].foto_masuk,
+          foto_keluar: rows[0].foto_keluar,
         }
       });
     } else {
@@ -207,8 +238,23 @@ router.get('/status-hari-ini', async (req, res) => {
   }
 });
 
-// POST /api/kehadiran-guru/absen-masuk — clock in with GPS
-router.post('/absen-masuk', async (req, res) => {
+// POST /api/kehadiran-guru/absen-masuk — clock in with GPS & foto
+router.post('/absen-masuk', (req, res, next) => {
+  // Handle both JSON (base64 foto) and multipart (file upload)
+  if (req.headers['content-type'] && req.headers['content-type'].includes('multipart')) {
+    uploadFoto.single('foto_masuk')(req, res, (err) => {
+      if (err) {
+        if (err.code === 'LIMIT_FILE_SIZE') {
+          return res.status(400).json({ message: 'Ukuran foto maksimal 2MB' });
+        }
+        return res.status(400).json({ message: err.message || 'Gagal mengupload foto' });
+      }
+      next();
+    });
+  } else {
+    next();
+  }
+}, async (req, res) => {
   try {
     const db = await getDatabase();
     const idGuru = await getGuruId(db, req.user.id);
@@ -217,7 +263,7 @@ router.post('/absen-masuk', async (req, res) => {
       return res.status(400).json({ message: 'Akun guru tidak ditemukan' });
     }
 
-    const { gps_masuk } = req.body;
+    const { gps_masuk, foto_masuk: fotoBase64 } = req.body;
     const today = new Date().toISOString().split('T')[0];
     const now = new Date();
     const jamMasuk = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
@@ -238,9 +284,24 @@ router.post('/absen-masuk', async (req, res) => {
       gps = await enrichGps(gps);
     }
 
+    // Handle foto dari multipart upload (file) atau base64 JSON
+    let fotoFilename = null;
+    if (req.file) {
+      fotoFilename = req.file.filename;
+    } else if (fotoBase64 && typeof fotoBase64 === 'string' && fotoBase64.startsWith('data:image')) {
+      // Simpan base64 sebagai file
+      const matches = fotoBase64.match(/^data:image\/([a-zA-Z]+);base64,(.+)$/);
+      if (matches) {
+        const ext = matches[1] === 'jpeg' ? 'jpg' : matches[1];
+        fotoFilename = `absen_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${ext}`;
+        const buffer = Buffer.from(matches[2], 'base64');
+        fs.writeFileSync(path.join(fotoDir, fotoFilename), buffer);
+      }
+    }
+
     const [result] = await db.execute(
-      'INSERT INTO kehadiran_guru (id_guru, tanggal, jam_masuk, gps_masuk) VALUES (?, ?, ?, ?)',
-      [idGuru, today, jamMasuk, gps]
+      'INSERT INTO kehadiran_guru (id_guru, tanggal, jam_masuk, gps_masuk, foto_masuk) VALUES (?, ?, ?, ?, ?)',
+      [idGuru, today, jamMasuk, gps, fotoFilename]
     );
 
     // Parse GPS for response
@@ -261,6 +322,7 @@ router.post('/absen-masuk', async (req, res) => {
         tanggal: today,
         jam_masuk: jamMasuk.slice(0, 5),
         gps_masuk: gpsDisplay,
+        foto_masuk: fotoFilename,
       }
     });
   } catch (error) {
@@ -268,8 +330,22 @@ router.post('/absen-masuk', async (req, res) => {
   }
 });
 
-// PUT /api/kehadiran-guru/absen-keluar/:id — clock out with GPS
-router.put('/absen-keluar/:id', async (req, res) => {
+// PUT /api/kehadiran-guru/absen-keluar/:id — clock out with GPS & foto
+router.put('/absen-keluar/:id', (req, res, next) => {
+  if (req.headers['content-type'] && req.headers['content-type'].includes('multipart')) {
+    uploadFoto.single('foto_keluar')(req, res, (err) => {
+      if (err) {
+        if (err.code === 'LIMIT_FILE_SIZE') {
+          return res.status(400).json({ message: 'Ukuran foto maksimal 2MB' });
+        }
+        return res.status(400).json({ message: err.message || 'Gagal mengupload foto' });
+      }
+      next();
+    });
+  } else {
+    next();
+  }
+}, async (req, res) => {
   try {
     const db = await getDatabase();
     const idGuru = await getGuruId(db, req.user.id);
@@ -278,7 +354,7 @@ router.put('/absen-keluar/:id', async (req, res) => {
       return res.status(400).json({ message: 'Akun guru tidak ditemukan' });
     }
 
-    const { gps_keluar } = req.body;
+    const { gps_keluar, foto_keluar: fotoBase64 } = req.body;
 
     // Validasi kepemilikan
     const [existing] = await db.execute(
@@ -302,9 +378,23 @@ router.put('/absen-keluar/:id', async (req, res) => {
       gps = await enrichGps(gps);
     }
 
+    // Handle foto dari multipart upload (file) atau base64 JSON
+    let fotoFilename = null;
+    if (req.file) {
+      fotoFilename = req.file.filename;
+    } else if (fotoBase64 && typeof fotoBase64 === 'string' && fotoBase64.startsWith('data:image')) {
+      const matches = fotoBase64.match(/^data:image\/([a-zA-Z]+);base64,(.+)$/);
+      if (matches) {
+        const ext = matches[1] === 'jpeg' ? 'jpg' : matches[1];
+        fotoFilename = `absen_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${ext}`;
+        const buffer = Buffer.from(matches[2], 'base64');
+        fs.writeFileSync(path.join(fotoDir, fotoFilename), buffer);
+      }
+    }
+
     await db.execute(
-      'UPDATE kehadiran_guru SET jam_keluar = ?, gps_keluar = ? WHERE id = ?',
-      [jamKeluar, gps, req.params.id]
+      'UPDATE kehadiran_guru SET jam_keluar = ?, gps_keluar = ?, foto_keluar = ? WHERE id = ?',
+      [jamKeluar, gps, fotoFilename, req.params.id]
     );
 
     // Parse GPS for response
@@ -323,6 +413,7 @@ router.put('/absen-keluar/:id', async (req, res) => {
         id: parseInt(req.params.id),
         jam_keluar: jamKeluar.slice(0, 5),
         gps_keluar: gpsDisplay,
+        foto_keluar: fotoFilename,
       }
     });
   } catch (error) {
