@@ -2674,6 +2674,7 @@ router.put('/:id/status', async (req, res) => {
     let emailSent = false;
     // Kirim email hanya jika status berubah (dari menunggu → diterima/ditolak)
     if (status !== statusLama && (status === 'diterima' || status === 'ditolak')) {
+      pendaftar.status = status; // Update status di objek agar PDF menampilkan status baru
       emailSent = await sendStatusEmail(pendaftar, status, keterangan);
     }
 
