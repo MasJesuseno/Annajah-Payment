@@ -59,7 +59,7 @@ export default function PpdbAdmin() {
   const [editForm, setEditForm] = useState({
     nisn: '', nama_lengkap: '', tempat_lahir: '', tanggal_lahir: '',
     jenis_kelamin: '', alamat: '', asal_sekolah: '', no_telp: '',
-    email: '', nama_ayah: '', nama_ibu: '', nilai: '',
+    email: '', nama_ayah: '', nama_ibu: '', nilai: '', status_pembayaran: 'belum_lunas',
   })
   const [savingEdit, setSavingEdit] = useState(false)
   const [loadingSettings, setLoadingSettings] = useState(false)
@@ -73,6 +73,7 @@ export default function PpdbAdmin() {
   const [konversiPendaftar, setKonversiPendaftar] = useState(null)
   const [tanggalMulai, setTanggalMulai] = useState('')
   const [tanggalSelesai, setTanggalSelesai] = useState('')
+  const [statusBayarFilter, setStatusBayarFilter] = useState('')
 
   // ── Quick Date Presets ──
   const todayStr = () => new Date().toISOString().split('T')[0]
@@ -99,6 +100,7 @@ export default function PpdbAdmin() {
       const params = { page, per_page: perPage }
       if (search) params.search = search
       if (statusFilter) params.status = statusFilter
+      if (statusBayarFilter) params.status_pembayaran = statusBayarFilter
       if (tanggalMulai) params.tanggal_mulai = tanggalMulai
       if (tanggalSelesai) params.tanggal_selesai = tanggalSelesai
       const res = await getPpdbList(params)
@@ -110,7 +112,7 @@ export default function PpdbAdmin() {
     } finally {
       setLoading(false)
     }
-  }, [page, search, statusFilter, tanggalMulai, tanggalSelesai])
+  }, [page, search, statusFilter, statusBayarFilter, tanggalMulai, tanggalSelesai])
 
   useEffect(() => {
     fetchData()
@@ -163,6 +165,7 @@ export default function PpdbAdmin() {
       nama_ayah: pendaftar.nama_ayah || '',
       nama_ibu: pendaftar.nama_ibu || '',
       nilai: pendaftar.nilai || '',
+      status_pembayaran: pendaftar.status_pembayaran || 'belum_lunas',
     })
     setSelectedPendaftar(pendaftar)
     setEditOpen(true)
@@ -584,8 +587,20 @@ export default function PpdbAdmin() {
               ))}
             </div>
           </div>
+          {/* Payment status filter */}
+          <div className="flex gap-2 flex-wrap">
+            <button onClick={() => { setStatusBayarFilter(''); setPage(1) }}
+              className={`px-3 py-2 rounded-lg text-xs font-medium transition-all border ${!statusBayarFilter ? 'border-annajah-300 bg-annajah-50 text-annajah-700 shadow-sm' : 'border-gray-200 text-gray-500 hover:bg-gray-50'}`}
+            >Semua Bayar</button>
+            <button onClick={() => { setStatusBayarFilter('belum_lunas'); setPage(1) }}
+              className={`px-3 py-2 rounded-lg text-xs font-medium transition-all border ${statusBayarFilter === 'belum_lunas' ? 'border-annajah-300 bg-annajah-50 text-annajah-700 shadow-sm' : 'border-gray-200 text-gray-500 hover:bg-gray-50'}`}
+            >Belum Lunas</button>
+            <button onClick={() => { setStatusBayarFilter('lunas'); setPage(1) }}
+              className={`px-3 py-2 rounded-lg text-xs font-medium transition-all border ${statusBayarFilter === 'lunas' ? 'border-annajah-300 bg-annajah-50 text-annajah-700 shadow-sm' : 'border-gray-200 text-gray-500 hover:bg-gray-50'}`}
+            >Lunas</button>
+          </div>
           <button
-            onClick={() => { setSearch(''); setSearchInput(''); setStatusFilter(''); setTanggalMulai(''); setTanggalSelesai(''); setPage(1) }}
+            onClick={() => { setSearch(''); setSearchInput(''); setStatusFilter(''); setStatusBayarFilter(''); setTanggalMulai(''); setTanggalSelesai(''); setPage(1) }}
             className="px-3 py-2 rounded-lg text-xs font-medium text-gray-500 hover:bg-gray-100 border border-gray-200 transition-all duration-200 flex items-center gap-1.5"
           >
             <RefreshCw className="w-3.5 h-3.5" /> Reset
@@ -606,6 +621,8 @@ export default function PpdbAdmin() {
                 <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-4 py-3">Asal Sekolah</th>
                 <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-4 py-3">No. Telp</th>
                 <th className="text-center text-xs font-semibold text-gray-500 uppercase tracking-wider px-4 py-3">Email</th>
+                <th className="text-center text-xs font-semibold text-gray-500 uppercase tracking-wider px-4 py-3">Bukti Trf</th>
+                <th className="text-center text-xs font-semibold text-gray-500 uppercase tracking-wider px-4 py-3">Status Bayar</th>
                 <th className="text-center text-xs font-semibold text-gray-500 uppercase tracking-wider px-4 py-3">Lokasi</th>
                 <th className="text-center text-xs font-semibold text-gray-500 uppercase tracking-wider px-4 py-3">Nilai</th>
                 <th className="text-center text-xs font-semibold text-gray-500 uppercase tracking-wider px-4 py-3">Status</th>
@@ -615,14 +632,14 @@ export default function PpdbAdmin() {
             <tbody className="divide-y divide-gray-100">
               {loading ? (
                 <tr>
-                  <td colSpan={11} className="text-center py-16">
+                  <td colSpan={13} className="text-center py-16">
                     <Loader2 className="w-8 h-8 animate-spin text-annajah-500 mx-auto mb-3" />
                     <p className="text-sm text-gray-400">Memuat data...</p>
                   </td>
                 </tr>
               ) : data.length === 0 ? (
                 <tr>
-                  <td colSpan={11} className="text-center py-16">
+                  <td colSpan={13} className="text-center py-16">
                     <Users className="w-12 h-12 text-gray-300 mx-auto mb-3" />
                     <p className="text-sm text-gray-400 font-medium">Belum ada pendaftar</p>
                     <p className="text-xs text-gray-400 mt-1">Belum ada calon peserta didik yang mendaftar.</p>
@@ -648,24 +665,35 @@ export default function PpdbAdmin() {
                     {d.email || '-'}
                   </td>
                   <td className="px-4 py-3 text-center">
-                    {d.gps_masuk ? (
-                      <span
-                        className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-blue-100 text-blue-600 cursor-help"
-                        title={(() => { try {
-                          const g = JSON.parse(d.gps_masuk);
-                          const parts = [];
-                          if (g.kelurahan) parts.push(`Kel. ${g.kelurahan}`);
-                          if (g.kecamatan) parts.push(`Kec. ${g.kecamatan}`);
-                          if (g.kabupaten) parts.push(g.kabupaten);
-                          if (g.provinsi) parts.push(g.provinsi);
-                          return parts.length > 0 ? parts.join(', ') : `(${g.lat}, ${g.lng})`;
-                        } catch { return d.gps_masuk; } })()}
-                      >
-                        <MapPin className="w-3.5 h-3.5" />
-                      </span>
+                    {d.bukti_transfer ? (
+                      <a href={`/api/ppdbnew/bukti-transfer/${d.bukti_transfer}`} target="_blank" rel="noopener noreferrer"
+                        onClick={e => e.stopPropagation()}
+                        className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium"
+                        title="Lihat bukti transfer">
+                        <FileText className="w-3.5 h-3.5" /> Ada
+                      </a>
                     ) : (
-                      <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-gray-100 text-gray-300">
+                      <span className="text-xs text-gray-300">-</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${d.status_pembayaran === 'lunas' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                      {d.status_pembayaran === 'lunas' ? 'Lunas' : 'Blm Lunas'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    {d.gps_masuk ? (() => {
+                      const parsed = parseGpsData(d.gps_masuk);
+                      return (
+                        <span className="inline-flex items-center gap-1.5 text-xs text-blue-700" title={parsed?.display || d.gps_masuk}>
+                          <MapPin className="w-3.5 h-3.5 shrink-0" />
+                          <span className="break-words min-w-0">{parsed?.display || d.gps_masuk}</span>
+                        </span>
+                      );
+                    })() : (
+                      <span className="inline-flex items-center gap-1 text-xs text-gray-300">
                         <MapPin className="w-3.5 h-3.5" />
+                        -
                       </span>
                     )}
                   </td>
@@ -1450,6 +1478,17 @@ export default function PpdbAdmin() {
                   min="0"
                   max="100"
                 />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="block text-xs font-medium text-gray-600 mb-1.5">Status Pembayaran</label>
+                <select
+                  value={editForm.status_pembayaran}
+                  onChange={e => setEditForm(prev => ({ ...prev, status_pembayaran: e.target.value }))}
+                  className="input-field"
+                >
+                  <option value="belum_lunas">Belum Lunas</option>
+                  <option value="lunas">Lunas</option>
+                </select>
               </div>
             </div>
 

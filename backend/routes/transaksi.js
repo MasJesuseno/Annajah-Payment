@@ -450,20 +450,33 @@ router.post('/:id/kirim-email', async (req, res) => {
       doc.moveDown(1.5);
 
       const ttdY = doc.y;
-      const ttdLeftX = 50;
       const ttdRightX = doc.page.width - 150;
 
       doc.fontSize(8).fillColor('#374151').font('Helvetica');
-      doc.text('Penerima', ttdLeftX + 25, ttdY, { align: 'center' });
-      doc.text('Mengetahui / Hormat Kami', ttdRightX + 20, ttdY, { align: 'center' });
+      doc.text('Mengetahui,', ttdRightX + 20, ttdY, { align: 'center' });
 
+      // Baris kosong untuk tanda tangan manual
       doc.moveDown(3.5);
-      doc.text(`( ${transaksi.nama_user || '________'} )`, ttdLeftX, doc.y, { align: 'center', width: 100 });
-      doc.text(`( ${pengaturan.kepala_sekolah || '________'} )`, ttdRightX, doc.y, { align: 'center', width: 120 });
+
+      // Tata Usaha — selalu tampilkan tanda tangan digital di email (abaikan pengaturan tampilkan)
+      if (pengaturan.ttd_bendahara) {
+        const fullPath = path.join(__dirname, '..', pengaturan.ttd_bendahara.replace(/^\//, ''));
+        if (fs.existsSync(fullPath)) {
+          try {
+            const img = doc.openImage(fullPath);
+            const scale = Math.min(80, 40) / img.width;
+            const iw = img.width * scale;
+            const ih = img.height * scale;
+            doc.image(fullPath, ttdRightX + (120 - iw) / 2, doc.y - ih - 10, { width: iw, height: ih });
+          } catch (e) {}
+        }
+      }
+      doc.x = ttdRightX;
+      doc.text(`( ${pengaturan.bendahara || '________'} )`, ttdRightX, doc.y, { align: 'center', width: 120 });
+
       doc.moveDown(0.3);
       doc.fontSize(7).fillColor('#6B7280');
-      doc.text('Petugas', ttdLeftX, doc.y, { align: 'center', width: 100 });
-      doc.text('Kepala Sekolah', ttdRightX, doc.y, { align: 'center', width: 120 });
+      doc.text('Tata Usaha', ttdRightX, doc.y, { align: 'center', width: 120 });
 
       doc.moveDown(1.5);
       doc.fontSize(6).fillColor('#9CA3AF').font('Helvetica');

@@ -3,7 +3,7 @@ const router = express.Router();
 const { getDatabase } = require('../database');
 const { authenticateToken } = require('../middleware/auth');
 const { handleError } = require('../helpers/errorHandler');
-const { getSettings } = require('../helpers/pdfHelpers');
+const { getSettings, writeSignature, writePpdbSignature } = require('../helpers/pdfHelpers');
 const { enrichGps, formatAddress } = require('../helpers/geocodeHelper');
 const PDFDocument = require('pdfkit');
 const { validateCaptcha } = require('../helpers/captchaHelper');
@@ -510,7 +510,7 @@ const uploadFoto = multer({
 router.get('/', async (req, res) => {
   try {
     const db = await getDatabase();
-    const { status, search, page, per_page } = req.query;
+    const { status, search, page, per_page, status_pembayaran } = req.query;
 
     let where = ' WHERE 1=1';
     const params = [];
@@ -518,6 +518,10 @@ router.get('/', async (req, res) => {
     if (status) {
       where += ' AND status = ?';
       params.push(status);
+    }
+    if (status_pembayaran) {
+      where += ' AND status_pembayaran = ?';
+      params.push(status_pembayaran);
     }
     if (search) {
       where += ' AND (nama_lengkap LIKE ? OR no_pendaftaran LIKE ? OR nisn LIKE ?)';
@@ -548,7 +552,7 @@ router.get('/', async (req, res) => {
       `SELECT id, no_pendaftaran, kode_rahasia, nisn, nama_lengkap, tempat_lahir, tanggal_lahir,
               jenis_kelamin, alamat, asal_sekolah, no_telp, email,
               nama_ayah, nama_ibu, status, keterangan, nilai, dikonversi,
-              foto, gps_masuk, created_at
+              foto, gps_masuk, created_at, status_pembayaran, bukti_transfer
        FROM ppdb_pendaftar${where} ORDER BY created_at DESC LIMIT ${limit} OFFSET ${offset}`,
       params
     );
@@ -994,20 +998,7 @@ router.get('/export/pdf', async (req, res) => {
 
     // Signature
     doc.moveDown(1);
-    const ttdY = doc.y;
-    const ttdLeftX = marginLeft + 20;
-    const ttdRightX = doc.page.width - marginRight - 120;
-
-    doc.fontSize(8).fillColor('#374151').font('Helvetica');
-    doc.text('Mengetahui,', ttdLeftX + 30, ttdY);
-    doc.text('Hormat Kami,', ttdRightX + 30, ttdY);
-    doc.moveDown(4);
-    doc.text(`( ${pengaturan.kepala_sekolah || '________'} )`, ttdLeftX, doc.y, { align: 'center', width: 120 });
-    doc.text(`( ${pengaturan.bendahara || '________'} )`, ttdRightX, doc.y, { align: 'center', width: 120 });
-    doc.moveDown(0.3);
-    doc.fontSize(7).fillColor('#6B7280').font('Helvetica');
-    doc.text('Kepala Sekolah', ttdLeftX, doc.y, { align: 'center', width: 120 });
-    doc.text('Bendahara', ttdRightX, doc.y, { align: 'center', width: 120 });
+    writeSignature(doc, pengaturan);
 
     // Footer
     doc.moveDown(1);
@@ -1550,7 +1541,7 @@ function applyTemplate(template, data) {
 // ─── Default Kartu Template Settings ───
 const DEFAULT_KARTU_SETTINGS = {
   warna_utama: '#15803D',
-  tampilkan_field: 'no_pendaftaran,nisn,nama_lengkap,tempat_lahir,tanggal_lahir,jenis_kelamin,asal_sekolah',
+  tampilkan_field: 'no_pendaftaran,nisn,nama_lengkap,tempat_lahir,tanggal_lahir,jenis_kelamin,asal_sekolah,status_pembayaran',
   tampilkan_qr: '1',
   judul_kartu: 'KARTU PENDAFTARAN',
   warna_header: '#15803D',
@@ -1824,7 +1815,7 @@ router.get('/:id', async (req, res) => {
       `SELECT id, no_pendaftaran, kode_rahasia, nisn, nama_lengkap, tempat_lahir, tanggal_lahir,
               jenis_kelamin, alamat, asal_sekolah, no_telp, email,
               nama_ayah, nama_ibu, status, keterangan, nilai, dikonversi,
-              foto, gps_masuk, created_at
+              foto, gps_masuk, created_at, status_pembayaran
        FROM ppdb_pendaftar WHERE id = ?`,
       [req.params.id]
     );
@@ -1850,6 +1841,7 @@ router.put('/:id', async (req, res) => {
       nisn, nama_lengkap, tempat_lahir, tanggal_lahir,
       jenis_kelamin, alamat, asal_sekolah, no_telp,
       email, nama_ayah, nama_ibu, nilai,
+      status_pembayaran,
     } = req.body;
 
     // Validasi wajib
@@ -1857,6 +1849,11 @@ router.put('/:id', async (req, res) => {
       return res.status(400).json({
         message: 'NISN, Nama Lengkap, dan No. Telepon harus diisi',
       });
+    }
+
+    // Validasi status_pembayaran
+    if (status_pembayaran && !['belum_lunas', 'lunas'].includes(status_pembayaran)) {
+      return res.status(400).json({ message: 'Status pembayaran tidak valid' });
     }
 
     // Normalisasi jenis kelamin
@@ -1883,13 +1880,15 @@ router.put('/:id', async (req, res) => {
       `UPDATE ppdb_pendaftar SET
         nisn = ?, nama_lengkap = ?, tempat_lahir = ?, tanggal_lahir = ?,
         jenis_kelamin = ?, alamat = ?, asal_sekolah = ?, no_telp = ?,
-        email = ?, nama_ayah = ?, nama_ibu = ?, nilai = ?
+        email = ?, nama_ayah = ?, nama_ibu = ?, nilai = ?,
+        status_pembayaran = ?
        WHERE id = ?`,
       [
         nisn, nama_lengkap, tempat_lahir || null,
         tglLahir, jk || null, alamat || null, asal_sekolah || null,
         no_telp, email || null, nama_ayah || null, nama_ibu || null,
         nilaiFinal,
+        status_pembayaran || 'belum_lunas',
         req.params.id,
       ]
     );
@@ -2197,7 +2196,8 @@ async function generatePpdbResultPdf(pendaftar, pengaturan) {
         ['No. Telepon', d.no_telp || '-', false],
         ['Email', d.email || '-', false],
         ['Nama Ayah', d.nama_ayah || '-', false],
-        ['Nama Ibu', d.nama_ibu || '-', false]
+        ['Nama Ibu', d.nama_ibu || '-', false],
+        ['Status Pembayaran', d.status_pembayaran === 'lunas' ? 'Lunas' : 'Belum Lunas', false]
       ];
 
       let yPos = doc.y;
@@ -2244,23 +2244,7 @@ async function generatePpdbResultPdf(pendaftar, pengaturan) {
 
       // ── Tanda Tangan ──
       doc.y = Math.max(qrY + 20, doc.page.height - 150);
-      const ttdY = doc.y;
-      const ttdW = 130;
-      const ttdLeft = marginLeft + 20;
-      const ttdRight = doc.page.width - marginRight - ttdW - 20;
-
-      doc.fontSize(8).fillColor('#374151').font('Helvetica');
-      doc.text('Mengetahui,', ttdLeft, ttdY);
-      doc.text('Hormat Kami,', ttdRight, ttdY);
-
-      doc.moveDown(4);
-      doc.fontSize(9).font('Helvetica-Bold');
-      doc.text(`( ${pengaturan.kepala_sekolah || '___________________'} )`, ttdLeft, doc.y, { width: ttdW, align: 'center' });
-      doc.text(`( ${pengaturan.bendahara || '___________________'} )`, ttdRight, doc.y, { width: ttdW, align: 'center' });
-      doc.moveDown(0.3);
-      doc.fontSize(7.5).fillColor('#6B7280').font('Helvetica');
-      doc.text('Kepala Sekolah', ttdLeft, doc.y, { width: ttdW, align: 'center' });
-      doc.text('Bendahara', ttdRight, doc.y, { width: ttdW, align: 'center' });
+      writePpdbSignature(doc, pengaturan);
 
       // ── Footer ──
       doc.fontSize(6.5).fillColor('#9CA3AF').font('Helvetica');
@@ -2573,10 +2557,10 @@ async function generatePpdbKartuPendaftaran(pendaftar, pengaturan, kartuSettings
       doc.y = 112;
       doc.moveTo(12, doc.y).lineTo(pageW - 12, doc.y).lineWidth(0.5).stroke(warnaUtama);
 
-      // ── Title ──
+      // ── Title (rata tengah) ──
       doc.y = 170;
       doc.fillColor(warnaUtama).fontSize(10).font('Helvetica-Bold');
-      doc.text(judulKartu, { align: 'center' });
+      doc.text(judulKartu, 0, 170, { width: pageW, align: 'center' });
 
       // Garis bawah title
       doc.moveDown(0.2);
@@ -2604,6 +2588,7 @@ async function generatePpdbKartuPendaftaran(pendaftar, pengaturan, kartuSettings
         { key: 'email', label: 'Email', value: d.email || '-', size: 7 },
         { key: 'nama_ayah', label: 'Nama Ayah', value: d.nama_ayah || '-', size: 7 },
         { key: 'nama_ibu', label: 'Nama Ibu', value: d.nama_ibu || '-', size: 7 },
+        { key: 'status_pembayaran', label: 'Status Pembayaran', value: d.status_pembayaran === 'lunas' ? 'Lunas' : 'Belum Lunas', size: 7, color: d.status_pembayaran === 'lunas' ? '#059669' : '#D97706', bold: true },
       ];
 
       // Filter fields sesuai settings, urutkan sesuai urutan di tampilkanField
@@ -2612,7 +2597,7 @@ async function generatePpdbKartuPendaftaran(pendaftar, pengaturan, kartuSettings
         .filter(Boolean);
 
       // Jika tidak ada field yang dipilih, tampilkan default (semua kecuali alamat, no_telp, email, nama_ayah, nama_ibu)
-      const defaultKeys = ['no_pendaftaran', 'nisn', 'nama_lengkap', 'tempat_lahir', 'tanggal_lahir', 'jenis_kelamin', 'asal_sekolah'];
+      const defaultKeys = ['no_pendaftaran', 'nisn', 'nama_lengkap', 'tempat_lahir', 'tanggal_lahir', 'jenis_kelamin', 'asal_sekolah', 'status_pembayaran'];
       const fieldsToRender = dataFields.length > 0 ? dataFields : allFields.filter(f => defaultKeys.includes(f.key));
 
       let yPos = startY;

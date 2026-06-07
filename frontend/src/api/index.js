@@ -175,6 +175,16 @@ export const deleteLogo = () => api.delete('/pengaturan/logo')
 export const kirimEmailLaporan = (data) => api.post('/email/kirim', data)
 export const testSmtpConnection = () => api.post('/email/test')
 
+// Tanda Tangan
+export const uploadTtd = (jenis, file) => {
+  const formData = new FormData()
+  formData.append('ttd', file)
+  return api.post(`/pengaturan/ttd/${jenis}`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+}
+export const deleteTtd = (jenis) => api.delete(`/pengaturan/ttd/${jenis}`)
+
 // Database Backup & Restore
 export const getBackups = () => api.get('/database/backups')
 export const createBackup = () => api.post('/database/backup')
@@ -364,6 +374,37 @@ export const importMataPelajaran = (file) => {
   })
 }
 export const downloadTemplateMataPelajaran = () => api.get('/mata-pelajaran/import/template', { responseType: 'blob' })
+
+// ─── PPDB NEW ───
+export const daftarPpdbNew = (data) => api.post('/ppdbnew/daftar', data, {
+  headers: { 'Content-Type': 'multipart/form-data' },
+})
+export const cekPpdbNew = (noPendaftaran, kodeRahasia) => api.get(`/ppdbnew/cek/${noPendaftaran}`, { params: { kode_rahasia: kodeRahasia } })
+export const editPpdbNew = (noPendaftaran, data) => api.put(`/ppdbnew/edit/${noPendaftaran}`, data)
+export const uploadFotoPpdbNew = (noPendaftaran, data) => {
+  return api.put(`/ppdbnew/foto/${noPendaftaran}`, data, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+}
+export const uploadBuktiTransferPpdbNew = (noPendaftaran, data) => {
+  return api.put(`/ppdbnew/bukti-transfer/${noPendaftaran}`, data, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+}
+export const downloadKartuPpdbNew = async (noPendaftaran) => {
+  try {
+    const res = await api.get(`/ppdbnew/cetak-kartu/${noPendaftaran}`, { responseType: 'blob' })
+    const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }))
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `kartu_ppdb_${noPendaftaran}.pdf`
+    a.click()
+    window.URL.revokeObjectURL(url)
+    return true
+  } catch (error) {
+    throw error
+  }
+}
 
 export const uploadFotoPpdb = (id, file) => {
   const formData = new FormData()

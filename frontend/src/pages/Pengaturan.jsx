@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
-import { getPengaturan, updatePengaturan, testSmtpConnection, uploadLogo, deleteLogo, getTahunAjaran } from '../api'
-import { Building2, Save, MapPin, Phone, Mail, Globe, Hash, BookOpen, User, Shield, Send, Server, Key, CheckCircle, XCircle, Image, Upload, Clock, Palette, RotateCcw } from 'lucide-react'
+import { getPengaturan, updatePengaturan, testSmtpConnection, uploadLogo, deleteLogo, getTahunAjaran, uploadTtd, deleteTtd } from '../api'
+import { Building2, Save, MapPin, Phone, Mail, Globe, Hash, BookOpen, User, Shield, Send, Server, Key, CheckCircle, XCircle, Image, Upload, Clock, Palette, RotateCcw, Pen, Eye, EyeOff, CreditCard } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 export default function Pengaturan() {
@@ -25,6 +25,13 @@ export default function Pengaturan() {
     warna_footer_bg: '#111827',
     warna_footer_text: '#9CA3AF',
     warna_footer_judul: '#ffffff',
+    rekening_bank: '',
+    rekening_nomor: '',
+    rekening_atas_nama: '',
+    biaya_pendaftaran: '',
+    ketua_panitia_ppdb: '',
+    ttd_ketua_panitia_ppdb: '',
+    tampilkan_ttd_ketua_panitia_ppdb: '1',
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -165,7 +172,7 @@ export default function Pengaturan() {
     { key: 'email', label: 'Email', icon: Mail, type: 'email', col: 'half', placeholder: 'info@smaannajah.sch.id' },
     { key: 'website', label: 'Website', icon: Globe, type: 'text', col: 'half', placeholder: 'www.smaannajah.sch.id' },
     { key: 'kepala_sekolah', label: 'Kepala Sekolah', icon: User, type: 'text', col: 'half' },
-    { key: 'bendahara', label: 'Bendahara', icon: Shield, type: 'text', col: 'half' },
+    { key: 'bendahara', label: 'Tata Usaha', icon: Shield, type: 'text', col: 'half' },
   ]
 
   const smtpFields = [
@@ -356,19 +363,20 @@ export default function Pengaturan() {
           </div>
         </div>
 
-        {/* Pejabat */}
+        {/* Pejabat & Tanda Tangan */}
         <div className="card">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center">
-              <User className="w-5 h-5 text-purple-600" />
+              <Pen className="w-5 h-5 text-purple-600" />
             </div>
             <div>
-              <h2 className="font-semibold text-gray-800">Pejabat Sekolah</h2>
-              <p className="text-xs text-gray-400">Nama pejabat untuk tanda tangan laporan & kwitansi</p>
+              <h2 className="font-semibold text-gray-800">Pejabat & Tanda Tangan</h2>
+              <p className="text-xs text-gray-400">Nama pejabat dan upload gambar tanda tangan untuk kwitansi & laporan</p>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Nama Pejabat */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-600 mb-1.5">Kepala Sekolah</label>
               <div className="relative">
@@ -395,23 +403,413 @@ export default function Pengaturan() {
                 />
               </div>
             </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-600 mb-1.5">Ketua Panitia PPDB</label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="text"
+                  className="input-field pl-10"
+                  value={settings.ketua_panitia_ppdb || ''}
+                  onChange={e => handleChange('ketua_panitia_ppdb', e.target.value)}
+                  placeholder="Nama Ketua Panitia PPDB"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Upload Tanda Tangan */}
+          <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* TTD Kepala Sekolah */}
+            <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
+              <label className="block text-sm font-medium text-gray-600 mb-3">Tanda Tangan Kepala Sekolah</label>
+              <div className="flex flex-col items-center gap-3">
+                <div className="w-40 h-20 rounded-xl border-2 border-dashed border-gray-300 bg-white flex items-center justify-center overflow-hidden">
+                  {settings.ttd_kepala_sekolah ? (
+                    <img src={settings.ttd_kepala_sekolah} alt="TTD Kepsek" className="max-w-full max-h-full object-contain p-1" />
+                  ) : (
+                    <span className="text-xs text-gray-400">Belum upload</span>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <label className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer text-xs font-medium text-gray-700 transition-all">
+                    <Upload className="w-3.5 h-3.5" />
+                    Upload
+                    <input type="file" accept="image/jpeg,image/png,image/gif,image/webp" className="hidden"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0]
+                        if (!file) return
+                        if (file.size > 1 * 1024 * 1024) { toast.error('Maksimal 1MB'); e.target.value = ''; return }
+                        try {
+                          const res = await uploadTtd('kepala_sekolah', file)
+                          setSettings(prev => ({ ...prev, ttd_kepala_sekolah: res.data.url }))
+                          toast.success('Tanda tangan Kepala Sekolah berhasil diupload')
+                        } catch (error) {
+                          console.error('Upload TTD error:', error)
+                          const msg = error.response?.data?.message || error.response?.statusText || error.message || 'Gagal upload'
+                          toast.error(msg)
+                        }
+                        e.target.value = ''
+                      }} />
+                  </label>
+                  {settings.ttd_kepala_sekolah && (
+                    <button onClick={async () => {
+                      if (!confirm('Hapus tanda tangan?')) return
+                      try {
+                        await deleteTtd('kepala_sekolah')
+                        setSettings(prev => ({ ...prev, ttd_kepala_sekolah: '' }))
+                        toast.success('Tanda tangan dihapus')
+                      } catch (error) {
+                        console.error('Delete TTD error:', error)
+                        toast.error(error.response?.data?.message || 'Gagal menghapus')
+                      }
+                    }} className="px-3 py-1.5 bg-red-50 text-red-600 border border-red-200 rounded-lg hover:bg-red-100 text-xs font-medium transition-all">Hapus</button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* TTD Tata Usaha */}
+            <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
+              <label className="block text-sm font-medium text-gray-600 mb-3">Tanda Tangan Tata Usaha</label>
+              <div className="flex flex-col items-center gap-3">
+                <div className="w-40 h-20 rounded-xl border-2 border-dashed border-gray-300 bg-white flex items-center justify-center overflow-hidden">
+                  {settings.ttd_bendahara ? (
+                    <img src={settings.ttd_bendahara} alt="TTD Bendahara" className="max-w-full max-h-full object-contain p-1" />
+                  ) : (
+                    <span className="text-xs text-gray-400">Belum upload</span>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <label className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer text-xs font-medium text-gray-700 transition-all">
+                    <Upload className="w-3.5 h-3.5" />
+                    Upload
+                    <input type="file" accept="image/jpeg,image/png,image/gif,image/webp" className="hidden"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0]
+                        if (!file) return
+                        if (file.size > 1 * 1024 * 1024) { toast.error('Maksimal 1MB'); e.target.value = ''; return }
+                        try {
+                          const res = await uploadTtd('bendahara', file)
+                          setSettings(prev => ({ ...prev, ttd_bendahara: res.data.url }))
+                          toast.success('Tanda tangan Tata Usaha berhasil diupload')
+                        } catch (error) {
+                          console.error('Upload TTD error:', error)
+                          const msg = error.response?.data?.message || error.response?.statusText || error.message || 'Gagal upload'
+                          toast.error(msg)
+                        }
+                        e.target.value = ''
+                      }} />
+                  </label>
+                  {settings.ttd_bendahara && (
+                    <button onClick={async () => {
+                      if (!confirm('Hapus tanda tangan?')) return
+                      try {
+                        await deleteTtd('bendahara')
+                        setSettings(prev => ({ ...prev, ttd_bendahara: '' }))
+                        toast.success('Tanda tangan dihapus')
+                      } catch (error) {
+                        console.error('Delete TTD error:', error)
+                        toast.error(error.response?.data?.message || 'Gagal menghapus')
+                      }
+                    }} className="px-3 py-1.5 bg-red-50 text-red-600 border border-red-200 rounded-lg hover:bg-red-100 text-xs font-medium transition-all">Hapus</button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* TTD Ketua Panitia PPDB */}
+            <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
+              <label className="block text-sm font-medium text-gray-600 mb-3">Tanda Tangan Ketua Panitia PPDB</label>
+              <div className="flex flex-col items-center gap-3">
+                <div className="w-40 h-20 rounded-xl border-2 border-dashed border-gray-300 bg-white flex items-center justify-center overflow-hidden">
+                  {settings.ttd_ketua_panitia_ppdb ? (
+                    <img src={settings.ttd_ketua_panitia_ppdb} alt="TTD Ketua Panitia" className="max-w-full max-h-full object-contain p-1" />
+                  ) : (
+                    <span className="text-xs text-gray-400">Belum upload</span>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <label className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer text-xs font-medium text-gray-700 transition-all">
+                    <Upload className="w-3.5 h-3.5" />
+                    Upload
+                    <input type="file" accept="image/jpeg,image/png,image/gif,image/webp" className="hidden"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0]
+                        if (!file) return
+                        if (file.size > 1 * 1024 * 1024) { toast.error('Maksimal 1MB'); e.target.value = ''; return }
+                        try {
+                          const res = await uploadTtd('ketua_panitia_ppdb', file)
+                          setSettings(prev => ({ ...prev, ttd_ketua_panitia_ppdb: res.data.url }))
+                          toast.success('Tanda tangan Ketua Panitia PPDB berhasil diupload')
+                        } catch (error) {
+                          console.error('Upload TTD error:', error)
+                          const msg = error.response?.data?.message || error.response?.statusText || error.message || 'Gagal upload'
+                          toast.error(msg)
+                        }
+                        e.target.value = ''
+                      }} />
+                  </label>
+                  {settings.ttd_ketua_panitia_ppdb && (
+                    <button onClick={async () => {
+                      if (!confirm('Hapus tanda tangan?')) return
+                      try {
+                        await deleteTtd('ketua_panitia_ppdb')
+                        setSettings(prev => ({ ...prev, ttd_ketua_panitia_ppdb: '' }))
+                        toast.success('Tanda tangan dihapus')
+                      } catch (error) {
+                        console.error('Delete TTD error:', error)
+                        toast.error(error.response?.data?.message || 'Gagal menghapus')
+                      }
+                    }} className="px-3 py-1.5 bg-red-50 text-red-600 border border-red-200 rounded-lg hover:bg-red-100 text-xs font-medium transition-all">Hapus</button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Tampilkan TTD di Kwitansi — 2 toggle terpisah */}
+          <div className="mt-6 space-y-3">
+            <h3 className="text-sm font-semibold text-gray-700">Tampilkan Tanda Tangan di Kwitansi</h3>
+            <p className="text-xs text-gray-400 mb-3">Aktifkan untuk menampilkan gambar tanda tangan di kwitansi. Jika nonaktif, hanya nama yang muncul.</p>
+
+            {/* Toggle Kepala Sekolah */}
+            <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                  {settings.tampilkan_ttd_kepala_sekolah === '1' ? (
+                    <Eye className="w-4 h-4 text-purple-600" />
+                  ) : (
+                    <EyeOff className="w-4 h-4 text-gray-400" />
+                  )}
+                </div>
+                <span className="text-sm font-medium text-gray-700">Kepala Sekolah</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleChange('tampilkan_ttd_kepala_sekolah', settings.tampilkan_ttd_kepala_sekolah === '1' ? '0' : '1')}
+                className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${
+                  settings.tampilkan_ttd_kepala_sekolah === '1' ? 'bg-annajah-500' : 'bg-gray-300'
+                }`}
+              >
+                <span
+                  className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-200 ${
+                    settings.tampilkan_ttd_kepala_sekolah === '1' ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
+
+            {/* Toggle Tata Usaha */}
+            <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center">
+                  {settings.tampilkan_ttd_bendahara === '1' ? (
+                    <Eye className="w-4 h-4 text-amber-600" />
+                  ) : (
+                    <EyeOff className="w-4 h-4 text-gray-400" />
+                  )}
+                </div>
+                <span className="text-sm font-medium text-gray-700">Tata Usaha</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleChange('tampilkan_ttd_bendahara', settings.tampilkan_ttd_bendahara === '1' ? '0' : '1')}
+                className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${
+                  settings.tampilkan_ttd_bendahara === '1' ? 'bg-annajah-500' : 'bg-gray-300'
+                }`}
+              >
+                <span
+                  className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-200 ${
+                    settings.tampilkan_ttd_bendahara === '1' ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
+
+            {/* Toggle Ketua Panitia PPDB */}
+            <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-sky-100 rounded-lg flex items-center justify-center">
+                  {settings.tampilkan_ttd_ketua_panitia_ppdb === '1' ? (
+                    <Eye className="w-4 h-4 text-sky-600" />
+                  ) : (
+                    <EyeOff className="w-4 h-4 text-gray-400" />
+                  )}
+                </div>
+                <span className="text-sm font-medium text-gray-700">Ketua Panitia PPDB</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleChange('tampilkan_ttd_ketua_panitia_ppdb', settings.tampilkan_ttd_ketua_panitia_ppdb === '1' ? '0' : '1')}
+                className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${
+                  settings.tampilkan_ttd_ketua_panitia_ppdb === '1' ? 'bg-annajah-500' : 'bg-gray-300'
+                }`}
+              >
+                <span
+                  className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-200 ${
+                    settings.tampilkan_ttd_ketua_panitia_ppdb === '1' ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
           </div>
 
           {/* Preview */}
           <div className="mt-6 p-4 bg-gray-50 rounded-xl border border-gray-200">
             <h3 className="text-sm font-semibold text-gray-700 mb-3">Preview Tanda Tangan</h3>
-            <div className="grid grid-cols-2 gap-8 text-center text-xs text-gray-500">
+            <div className="grid grid-cols-3 gap-8 text-center text-xs text-gray-500">
               <div>
-                <div className="border-b border-dashed border-gray-300 mb-1 pb-1">ttd</div>
+                {settings.ttd_kepala_sekolah ? (
+                  <img src={settings.ttd_kepala_sekolah} alt="TTD" className="h-12 mx-auto mb-1 object-contain" />
+                ) : (
+                  <div className="border-b border-dashed border-gray-300 mb-1 pb-1">ttd</div>
+                )}
                 <p className="font-medium text-gray-700">{settings.kepala_sekolah || '(Nama Kepala Sekolah)'}</p>
                 <p>Kepala Sekolah</p>
               </div>
               <div>
-                <div className="border-b border-dashed border-gray-300 mb-1 pb-1">ttd</div>
-                <p className="font-medium text-gray-700">{settings.bendahara || '(Nama Bendahara)'}</p>
-                <p>Bendahara</p>
+                {settings.ttd_bendahara ? (
+                  <img src={settings.ttd_bendahara} alt="TTD" className="h-12 mx-auto mb-1 object-contain" />
+                ) : (
+                  <div className="border-b border-dashed border-gray-300 mb-1 pb-1">ttd</div>
+                )}
+                <p className="font-medium text-gray-700">{settings.bendahara || '(Nama Tata Usaha)'}</p>
+                <p>Tata Usaha</p>
+              </div>
+              <div>
+                {settings.ttd_ketua_panitia_ppdb ? (
+                  <img src={settings.ttd_ketua_panitia_ppdb} alt="TTD" className="h-12 mx-auto mb-1 object-contain" />
+                ) : (
+                  <div className="border-b border-dashed border-gray-300 mb-1 pb-1">ttd</div>
+                )}
+                <p className="font-medium text-gray-700">{settings.ketua_panitia_ppdb || '(Nama Ketua Panitia PPDB)'}</p>
+                <p>Ketua Panitia PPDB</p>
               </div>
             </div>
+            <p className="text-[10px] text-gray-400 text-center mt-3">
+              Tanda tangan akan muncul di kwitansi & laporan PDF jika toggle masing-masing aktif.
+            </p>
+          </div>
+        </div>
+
+        {/* Rekening Pembayaran & Biaya Pendaftaran */}
+        <div className="card">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center">
+              <CreditCard className="w-5 h-5 text-emerald-600" />
+            </div>
+            <div>
+              <h2 className="font-semibold text-gray-800">Rekening Pembayaran & Biaya Pendaftaran</h2>
+              <p className="text-xs text-gray-400">Informasi rekening untuk pembayaran dan biaya pendaftaran PPDB</p>
+            </div>
+          </div>
+
+          {/* Rekening Pembayaran */}
+          <div className="mb-6">
+            <h3 className="text-sm font-semibold text-gray-700 mb-4">Rekening Pembayaran</h3>
+            <p className="text-xs text-gray-400 mb-4">Rekening ini akan ditampilkan di halaman pendaftaran PPDB sebagai informasi transfer biaya pendaftaran</p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-1.5">Nama Bank</label>
+                <div className="relative">
+                  <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="text"
+                    className="input-field pl-10"
+                    value={settings.rekening_bank || ''}
+                    onChange={e => handleChange('rekening_bank', e.target.value)}
+                    placeholder="BANK BRI"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-1.5">Nomor Rekening</label>
+                <div className="relative">
+                  <Hash className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="text"
+                    className="input-field pl-10"
+                    value={settings.rekening_nomor || ''}
+                    onChange={e => handleChange('rekening_nomor', e.target.value)}
+                    placeholder="1234567890"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-1.5">Atas Nama</label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="text"
+                    className="input-field pl-10"
+                    value={settings.rekening_atas_nama || ''}
+                    onChange={e => handleChange('rekening_atas_nama', e.target.value)}
+                    placeholder="SMA Annajah"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Biaya Pendaftaran */}
+          <div className="pt-6 border-t border-gray-100">
+            <h3 className="text-sm font-semibold text-gray-700 mb-4">Biaya Pendaftaran PPDB</h3>
+            <div className="max-w-sm">
+              <label className="block text-sm font-medium text-gray-600 mb-1.5">Biaya Pendaftaran (Rp)</label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-medium text-sm">Rp</span>
+                <input
+                  type="number"
+                  className="input-field pl-10"
+                  value={settings.biaya_pendaftaran || ''}
+                  onChange={e => handleChange('biaya_pendaftaran', e.target.value)}
+                  placeholder="350000"
+                  min="0"
+                />
+              </div>
+              <p className="text-xs text-gray-400 mt-1">Jumlah biaya yang harus dibayar calon siswa saat mendaftar</p>
+            </div>
+          </div>
+
+          {/* Preview */}
+          <div className="mt-6 p-4 bg-gray-50 rounded-xl border border-gray-200">
+            <h3 className="text-sm font-semibold text-gray-700 mb-3">Preview tampilan di halaman PPDB</h3>
+            <div className="p-4 bg-white rounded-xl border border-gray-200">
+              <div className="flex items-center gap-2 mb-3">
+                <Building2 className="w-4 h-4 text-emerald-600" />
+                <span className="text-sm font-semibold text-gray-700">Informasi Pembayaran</span>
+              </div>
+              <div className="space-y-1.5 text-sm">
+                {settings.rekening_bank || settings.rekening_nomor || settings.rekening_atas_nama ? (
+                  <>
+                    <p className="text-gray-600">
+                      <span className="text-gray-400">Bank: </span>
+                      <span className="font-medium">{settings.rekening_bank || 'BANK BRI'}</span>
+                    </p>
+                    <p className="text-gray-600">
+                      <span className="text-gray-400">No. Rekening: </span>
+                      <span className="font-mono font-medium">{settings.rekening_nomor || '1234567890'}</span>
+                    </p>
+                    <p className="text-gray-600">
+                      <span className="text-gray-400">A/n: </span>
+                      <span className="font-medium">{settings.rekening_atas_nama || 'SMA Annajah'}</span>
+                    </p>
+                  </>
+                ) : (
+                  <p className="text-gray-400 italic">Isi data rekening untuk menampilkan informasi pembayaran</p>
+                )}
+              </div>
+              <div className="mt-3 pt-3 border-t border-gray-100">
+                <p className="text-gray-600">
+                  <span className="text-gray-400">Biaya Pendaftaran: </span>
+                  <span className="font-bold text-emerald-600">
+                    Rp {settings.biaya_pendaftaran ? parseInt(settings.biaya_pendaftaran).toLocaleString('id-ID') : '350.000'}
+                  </span>
+                </p>
+              </div>
+            </div>
+            <p className="text-[10px] text-gray-400 text-center mt-3">Preview ini akan muncul di halaman Cara Mendaftar pada PPDB Online.</p>
           </div>
         </div>
 

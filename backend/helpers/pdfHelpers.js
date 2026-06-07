@@ -211,20 +211,92 @@ function writeGrandTotal(doc, label, value, pageWidth) {
   doc.y = gtY + 30;
 }
 
+function writeSignatureImage(doc, ttdPath, maxW) {
+  if (!ttdPath) return false;
+  const fullPath = path.join(__dirname, '..', ttdPath.replace(/^\//, ''));
+  if (!fs.existsSync(fullPath)) return false;
+  try {
+    const img = doc.openImage(fullPath);
+    const scale = Math.min(maxW || 80, 50) / img.width;
+    const w = img.width * scale;
+    const h = img.height * scale;
+    doc.image(fullPath, doc.x, doc.y - h + 4, { width: w, height: h });
+    return true;
+  } catch (e) { return false; }
+}
+
 function writeSignature(doc, pengaturan) {
   const leftX = 60;
   const rightX = doc.page.width - 160;
 
+  const tampilkanKepsek = pengaturan.tampilkan_ttd_kepala_sekolah !== '0';
+  const tampilkanBendahara = pengaturan.tampilkan_ttd_bendahara !== '0';
+
   doc.fontSize(9).fillColor('#374151').font('Helvetica');
   doc.text('Mengetahui,', leftX + 30, doc.y);
   doc.text('Hormat Kami,', rightX + 30, doc.y);
-  doc.moveDown(4);
-  doc.text(`( ${pengaturan.kepala_sekolah || '________'} )`, leftX, doc.y, { align: 'center', width: 120 });
-  doc.text(`( ${pengaturan.bendahara || '________'} )`, rightX, doc.y, { align: 'center', width: 120 });
+
+  // ─── Kiri: Kepala Sekolah ───
+  if (tampilkanKepsek) {
+    doc.x = leftX;
+    const ttdKepala = writeSignatureImage(doc, pengaturan.ttd_kepala_sekolah, 80);
+    if (!ttdKepala) {
+      doc.moveDown(4);
+      doc.text(`( ${pengaturan.kepala_sekolah || '________'} )`, leftX, doc.y, { align: 'center', width: 120 });
+    }
+  } else {
+    // Fallback: hanya teks jika gambar tidak ditampilkan
+    const afterTtdY = doc.y + 30;
+    doc.moveDown(4);
+    doc.text(`( ${pengaturan.kepala_sekolah || '________'} )`, leftX, doc.y, { align: 'center', width: 120 });
+  }
+
+  // ─── Kanan: Bendahara ───
+  if (tampilkanBendahara) {
+    doc.x = rightX;
+    const ttdBendahara = writeSignatureImage(doc, pengaturan.ttd_bendahara, 80);
+    if (!ttdBendahara) {
+      doc.moveDown(4);
+      doc.text(`( ${pengaturan.bendahara || '________'} )`, rightX, doc.y, { align: 'center', width: 120 });
+    }
+  } else {
+    doc.moveDown(4);
+    doc.text(`( ${pengaturan.bendahara || '________'} )`, rightX, doc.y, { align: 'center', width: 120 });
+  }
+
   doc.moveDown(0.3);
   doc.fontSize(8).fillColor('#6B7280').font('Helvetica');
   doc.text('Kepala Sekolah', leftX, doc.y, { align: 'center', width: 120 });
-  doc.text('Bendahara', rightX, doc.y, { align: 'center', width: 120 });
+  doc.text('Tata Usaha', rightX, doc.y, { align: 'center', width: 120 });
+}
+
+function writePpdbSignature(doc, pengaturan) {
+  const centerX = (doc.page.width - 200) / 2;
+
+  // Naikkan 4 baris ke atas
+  doc.y = doc.y - 44;
+
+  doc.fontSize(9).fillColor('#374151').font('Helvetica');
+  doc.text('Mengetahui,', centerX, doc.y, { align: 'center', width: 200 });
+
+  // ─── Nama Ketua Panitia PPDB (selalu ditampilkan) ───
+  doc.moveDown(8);
+  doc.fontSize(9).fillColor('#374151').font('Helvetica-Bold');
+  doc.text(pengaturan.ketua_panitia_ppdb || '___________________', centerX, doc.y, { align: 'center', width: 200 });
+
+  // ─── Tanda tangan digital (jika diupload & ditampilkan) ───
+  const tampilkanTtd = pengaturan.tampilkan_ttd_ketua_panitia_ppdb !== '0';
+  if (tampilkanTtd && pengaturan.ttd_ketua_panitia_ppdb) {
+    doc.x = centerX + 75; // center image (50px) in 200px area
+    const saveY = doc.y;
+    doc.y = doc.y - 33; // naik 3 baris supaya tidak bertumpuk dengan label
+    writeSignatureImage(doc, pengaturan.ttd_ketua_panitia_ppdb, 100);
+    doc.y = saveY; // kembalikan untuk posisi label
+  }
+
+  doc.moveDown(1.5);
+  doc.fontSize(8).fillColor('#6B7280').font('Helvetica');
+  doc.text('Ketua Panitia PPDB', centerX, doc.y, { align: 'center', width: 200 });
 }
 
 function getDailyDate() {
@@ -244,5 +316,6 @@ module.exports = {
   writeHeader,
   writeGrandTotal,
   writeSignature,
+  writePpdbSignature,
   getDailyDate,
 };

@@ -22,12 +22,17 @@ import InputKehadiranWali from './pages/InputKehadiranWali'
 import Database from './pages/Database'
 import Kehadiran from './pages/Kehadiran'
 import InputKehadiranBulk from './pages/InputKehadiranBulk'
-import PpdbLanding from './pages/PpdbLanding'
 import PpdbDaftar from './pages/PpdbDaftar'
 import PpdbHasil from './pages/PpdbHasil'
 import PpdbKartu from './pages/PpdbKartu'
 import PpdbAdmin from './pages/PpdbAdmin'
 import PpdbSettings from './pages/PpdbSettings'
+import PpdbNewLanding from './pages/PpdbNewLanding'
+import PpdbNewDaftar from './pages/PpdbNewDaftar'
+import PpdbNewHasil from './pages/PpdbNewHasil'
+import PpdbNewKartu from './pages/PpdbNewKartu'
+import PpdbNewEdit from './pages/PpdbNewEdit'
+import PpdbNewAdmin from './pages/PpdbNewAdmin'
 import KehadiranGuru from './pages/KehadiranGuru'
 import KehadiranGuruSaya from './pages/KehadiranGuruSaya'
 import DaftarKehadiranSaya from './pages/DaftarKehadiranSaya'
@@ -95,10 +100,16 @@ export default function App() {
         <PublicRoute><Login /></PublicRoute>
       } />
       {/* Public PPDB Routes */}
-      <Route path="/ppdb" element={<PpdbLanding />} />
+      <Route path="/ppdb" element={<Navigate to="/ppdbnew" replace />} />
       <Route path="/ppdb/daftar" element={<PpdbDaftar />} />
       <Route path="/ppdb/hasil" element={<PpdbHasil />} />
       <Route path="/ppdb/kartu" element={<PpdbKartu />} />
+      {/* Public PPDB New Routes */}
+      <Route path="/ppdbnew" element={<PpdbNewLanding />} />
+      <Route path="/ppdbnew/daftar" element={<PpdbNewDaftar />} />
+      <Route path="/ppdbnew/hasil" element={<PpdbNewHasil />} />
+      <Route path="/ppdbnew/kartu" element={<PpdbNewKartu />} />
+      <Route path="/ppdbnew/edit" element={<PpdbNewEdit />} />
       <Route path="/" element={
         <ProtectedRoute><Layout /></ProtectedRoute>
       }>
@@ -129,6 +140,7 @@ export default function App() {
         <Route path="database" element={<Database />} />
         <Route path="ppdb/admin" element={<PpdbAdmin />} />
         <Route path="ppdb/pengaturan" element={<PpdbSettings />} />
+        <Route path="ppdbnew/admin" element={<PpdbNewAdmin />} />
         <Route path="ekstrakurikuler" element={<Ekstrakurikuler />} />
         <Route path="ekstrakurikuler/peserta" element={<PesertaEkstrakurikuler />} />
         <Route path="ekstrakurikuler/input-peserta" element={<InputPesertaEkstrakurikuler />} />

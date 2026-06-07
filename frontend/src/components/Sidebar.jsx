@@ -98,6 +98,7 @@ const menuGroups = [
     items: [
       { path: '/ppdb/admin', label: 'Data PPDB', icon: DoorOpen },
       { path: '/ppdb/pengaturan', label: 'Pengaturan PPDB', icon: Mail },
+      { path: '/ppdbnew/admin', label: 'PPDB Baru', icon: DoorOpen },
     ],
   },
   {

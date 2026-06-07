@@ -26,6 +26,7 @@ app.use('/api/database', require('./routes/database'));
 app.use('/api/guru', require('./routes/guru'));
 app.use('/api/kehadiran', require('./routes/kehadiran'));
 app.use('/api/ppdb', require('./routes/ppdb'));
+app.use('/api/ppdbnew', require('./routes/ppdbnew'));
 app.use('/api/kehadiran-guru', require('./routes/kehadiran-guru'));
 app.use('/api/ekstrakurikuler', require('./routes/ekstrakurikuler'));
 app.use('/api/bimbingan-konseling', require('./routes/bimbingan-konseling'));

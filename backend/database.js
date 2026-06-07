@@ -473,6 +473,14 @@ async function initDatabase() {
       await conn.execute(`UPDATE ppdb_pendaftar SET dikonversi = 1 WHERE keterangan LIKE 'Dikonversi ke siswa%' AND dikonversi = 0`);
     } catch (e) {}
 
+    try {
+      await conn.execute(`ALTER TABLE ppdb_pendaftar ADD COLUMN bukti_transfer VARCHAR(255) DEFAULT NULL`);
+    } catch (e) {}
+
+    try {
+      await conn.execute(`ALTER TABLE ppdb_pendaftar ADD COLUMN status_pembayaran ENUM('belum_lunas','lunas') DEFAULT 'belum_lunas'`);
+    } catch (e) {}
+
     await conn.execute(`
       CREATE TABLE IF NOT EXISTS role_permissions (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -640,6 +648,17 @@ async function seedData() {
         ['smtp_pass', ''],
         ['smtp_email_pengirim', ''],
         ['smtp_nama_pengirim', 'SMA Annajah'],
+        ['ttd_kepala_sekolah', ''],
+        ['ttd_bendahara', ''],
+        ['tampilkan_ttd_kepala_sekolah', '1'],
+        ['tampilkan_ttd_bendahara', '1'],
+        ['rekening_bank', 'BANK BRI'],
+        ['rekening_nomor', '1234567890'],
+        ['rekening_atas_nama', 'SMA Annajah'],
+        ['biaya_pendaftaran', '350000'],
+        ['ketua_panitia_ppdb', ''],
+        ['ttd_ketua_panitia_ppdb', ''],
+        ['tampilkan_ttd_ketua_panitia_ppdb', '1'],
       ];
       const insertSetting = 'INSERT INTO pengaturan (`key`, `value`) VALUES (?, ?)';
       for (const [key, value] of defaultSettings) {
