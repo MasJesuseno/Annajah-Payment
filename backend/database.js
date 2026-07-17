@@ -492,6 +492,40 @@ async function initDatabase() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
 
+    // ─── Pengaturan TV Tables ───
+    await conn.execute(`
+      CREATE TABLE IF NOT EXISTS tv_agenda (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        tanggal DATE NOT NULL,
+        agenda TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
+    await conn.execute(`
+      CREATE TABLE IF NOT EXISTS tv_kata_bijak (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        kata_bijak TEXT NOT NULL,
+        tampil ENUM('Ya','Tidak') DEFAULT 'Ya',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
+    await conn.execute(`
+      CREATE TABLE IF NOT EXISTS tv_video (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        link_video VARCHAR(500) NOT NULL,
+        deskripsi TEXT DEFAULT NULL,
+        tampil ENUM('Ya','Tidak') DEFAULT 'Ya',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
+    // Add deskripsi column to tv_video if not exists (for existing databases)
+    try {
+      await conn.execute(`ALTER TABLE tv_video ADD COLUMN deskripsi TEXT DEFAULT NULL`);
+    } catch (e) {}
+
     // Tambah menu /log-aktivitas untuk role yang sudah ada (migrasi database existing)
     try {
       const [logPathExists] = await conn.execute(
@@ -518,6 +552,33 @@ async function initDatabase() {
       console.log('[role_permissions] Log aktivitas migration error (non-fatal):', e.message);
     }
 
+    // Tambah menu /pengaturan-tv untuk role yang sudah ada (migrasi database existing)
+    try {
+      const [tvAgendaExists] = await conn.execute(
+        "SELECT COUNT(*) as count FROM role_permissions WHERE menu_path = '/pengaturan-tv/agenda' AND role = 'admin'"
+      );
+      if (tvAgendaExists[0].count === 0) {
+        const tvPaths = ['/pengaturan-tv/agenda', '/pengaturan-tv/kata-bijak', '/pengaturan-tv/video'];
+        for (const path of tvPaths) {
+          await conn.execute(
+            'INSERT INTO role_permissions (role, menu_path, can_access) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE can_access = VALUES(can_access)',
+            ['admin', path, 1]
+          );
+          await conn.execute(
+            'INSERT INTO role_permissions (role, menu_path, can_access) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE can_access = VALUES(can_access)',
+            ['bendahara', path, 0]
+          );
+          await conn.execute(
+            'INSERT INTO role_permissions (role, menu_path, can_access) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE can_access = VALUES(can_access)',
+            ['guru', path, 0]
+          );
+        }
+        console.log('[role_permissions] Pengaturan TV menu permissions added');
+      }
+    } catch (e) {
+      console.log('[role_permissions] Pengaturan TV migration error (non-fatal):', e.message);
+    }
+
     // Migrate ppdb_access to role_permissions for guru role if not yet migrated
     try {
       const [permCount] = await conn.execute("SELECT COUNT(*) as count FROM role_permissions WHERE role = 'admin'");
@@ -537,6 +598,7 @@ async function initDatabase() {
           '/transaksi', '/laporan', '/pembayaran',
           '/pengaturan', '/tahun-ajaran', '/users', '/database',
           '/role-permissions', '/log-aktivitas',
+          '/pengaturan-tv/agenda', '/pengaturan-tv/kata-bijak', '/pengaturan-tv/video',
         ];
         const insertPerm = 'INSERT INTO role_permissions (role, menu_path, can_access) VALUES (?, ?, ?)';
         
@@ -659,6 +721,8 @@ async function seedData() {
         ['ketua_panitia_ppdb', ''],
         ['ttd_ketua_panitia_ppdb', ''],
         ['tampilkan_ttd_ketua_panitia_ppdb', '1'],
+        ['visi', 'Menjadi sekolah unggulan yang menghasilkan generasi beriman, berilmu, dan berakhlak mulia.'],
+        ['misi', '1. Menyelenggarakan pendidikan yang berkualitas dan berkarakter\n2. Mengembangkan potensi siswa secara optimal\n3. Membangun lingkungan sekolah yang islami dan kondusif\n4. Menjalin kerjasama yang harmonis dengan orang tua dan masyarakat'],
       ];
       const insertSetting = 'INSERT INTO pengaturan (`key`, `value`) VALUES (?, ?)';
       for (const [key, value] of defaultSettings) {

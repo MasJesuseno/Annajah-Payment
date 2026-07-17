@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { getPengaturan, updatePengaturan, testSmtpConnection, uploadLogo, deleteLogo, getTahunAjaran, uploadTtd, deleteTtd } from '../api'
-import { Building2, Save, MapPin, Phone, Mail, Globe, Hash, BookOpen, User, Shield, Send, Server, Key, CheckCircle, XCircle, Image, Upload, Clock, Palette, RotateCcw, Pen, Eye, EyeOff, CreditCard } from 'lucide-react'
+import { Building2, Save, MapPin, Phone, Mail, Globe, Hash, BookOpen, User, Shield, Send, Server, Key, CheckCircle, XCircle, Image, Upload, Clock, Palette, RotateCcw, Pen, Eye, EyeOff, CreditCard, Lightbulb, Target } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 export default function Pengaturan() {
@@ -32,6 +32,8 @@ export default function Pengaturan() {
     ketua_panitia_ppdb: '',
     ttd_ketua_panitia_ppdb: '',
     tampilkan_ttd_ketua_panitia_ppdb: '1',
+    visi: '',
+    misi: '',
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -360,6 +362,47 @@ export default function Pengaturan() {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+
+        {/* Visi & Misi */}
+        <div className="card">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 bg-yellow-100 rounded-xl flex items-center justify-center">
+              <Lightbulb className="w-5 h-5 text-yellow-600" />
+            </div>
+            <div>
+              <h2 className="font-semibold text-gray-800">Visi & Misi</h2>
+              <p className="text-xs text-gray-400">Visi dan misi sekolah untuk ditampilkan di halaman display TV</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-600 mb-1.5">Visi</label>
+              <div className="relative">
+                <Lightbulb className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+                <textarea
+                  className="input-field pl-10 min-h-[100px]"
+                  value={settings.visi || ''}
+                  onChange={e => handleChange('visi', e.target.value)}
+                  placeholder="Masukkan visi sekolah..."
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-600 mb-1.5">Misi</label>
+              <div className="relative">
+                <Target className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+                <textarea
+                  className="input-field pl-10 min-h-[100px]"
+                  value={settings.misi || ''}
+                  onChange={e => handleChange('misi', e.target.value)}
+                  placeholder="Masukkan misi sekolah...&#10;Pisahkan setiap misi dengan baris baru"
+                />
+              </div>
+              <p className="text-xs text-gray-400 mt-1">Pisahkan setiap poin misi dengan baris baru (Enter)</p>
+            </div>
           </div>
         </div>
 

@@ -56,6 +56,10 @@ import RekapNilaiSiswa from './pages/RekapNilaiSiswa'
 import TahunAjaran from './pages/TahunAjaran'
 import RolePermissions from './pages/RolePermissions'
 import ActivityLog from './pages/ActivityLog'
+import Agenda from './pages/Agenda'
+import KataBijak from './pages/KataBijak'
+import VideoTv from './pages/Video'
+import TvDisplay from './pages/TvDisplay'
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth()
@@ -110,6 +114,9 @@ export default function App() {
       <Route path="/ppdbnew/hasil" element={<PpdbNewHasil />} />
       <Route path="/ppdbnew/kartu" element={<PpdbNewKartu />} />
       <Route path="/ppdbnew/edit" element={<PpdbNewEdit />} />
+      {/* Public TV Display Route */}
+      <Route path="/TV" element={<TvDisplay />} />
+      <Route path="/tv" element={<TvDisplay />} />
       <Route path="/" element={
         <ProtectedRoute><Layout /></ProtectedRoute>
       }>
@@ -160,6 +167,9 @@ export default function App() {
         <Route path="tahun-ajaran" element={<TahunAjaran />} />
         <Route path="role-permissions" element={<RolePermissions />} />
         <Route path="log-aktivitas" element={<ActivityLog />} />
+        <Route path="pengaturan-tv/agenda" element={<Agenda />} />
+        <Route path="pengaturan-tv/kata-bijak" element={<KataBijak />} />
+        <Route path="pengaturan-tv/video" element={<VideoTv />} />
       </Route>
       <Route path="*" element={<DefaultRedirect />} />
     </Routes>

@@ -6,7 +6,8 @@ import {
   ArrowLeftRight, FileText, LogOut, School, ChevronRight,
   X, Settings, Shield, Database as DatabaseIcon, ClipboardList,
   User, DoorOpen, Mail, CheckSquare,  Clock, History, CalendarDays,
-  Medal, BarChart3, HeartHandshake, Trophy, Award, Palette, BookOpen, ClipboardCheck, Calendar, Activity, ChevronDown
+  Medal, BarChart3, HeartHandshake, Trophy, Award, Palette, BookOpen, ClipboardCheck, Calendar, Activity, ChevronDown,
+  Monitor, Quote, Video
 } from 'lucide-react'
 import { getPengaturan, getRolePermissionsByRole } from '../api'
 
@@ -120,6 +121,15 @@ const menuGroups = [
       { path: '/database', label: 'Backup Database', icon: DatabaseIcon },
       { path: '/role-permissions', label: 'Hak Akses Menu', icon: Shield },
       { path: '/log-aktivitas', label: 'Log Aktivitas', icon: Activity },
+    ],
+  },
+  {
+    label: 'Pengaturan TV',
+    icon: Monitor,
+    items: [
+      { path: '/pengaturan-tv/agenda', label: 'Agenda', icon: CalendarDays },
+      { path: '/pengaturan-tv/kata-bijak', label: 'Kata Bijak', icon: Quote },
+      { path: '/pengaturan-tv/video', label: 'Video', icon: Video },
     ],
   },
 ]

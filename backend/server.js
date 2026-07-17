@@ -37,6 +37,7 @@ app.use('/api/nilai-siswa', require('./routes/nilai-siswa'));
 app.use('/api/tahun-ajaran', require('./routes/tahun-ajaran'));
 app.use('/api/role-permissions', require('./routes/role-permissions'));
 app.use('/api/activity-log', require('./routes/activity-log'));
+app.use('/api/pengaturan-tv', require('./routes/pengaturan-tv'));
 
 // Serve frontend in production
 const frontendPath = path.join(__dirname, '..', 'frontend', 'dist');

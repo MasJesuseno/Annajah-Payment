@@ -456,5 +456,24 @@ export const updateRolePermissions = (role, data) => api.put(`/role-permissions/
 export const getActivityLog = (params) => api.get('/activity-log', { params })
 export const createActivityLog = (data) => api.post('/activity-log', data)
 
+// ─── Pengaturan TV ───
+// Agenda
+export const getAgendaTv = () => api.get('/pengaturan-tv/agenda')
+export const createAgendaTv = (data) => api.post('/pengaturan-tv/agenda', data)
+export const updateAgendaTv = (id, data) => api.put(`/pengaturan-tv/agenda/${id}`, data)
+export const deleteAgendaTv = (id) => api.delete(`/pengaturan-tv/agenda/${id}`)
+
+// Kata Bijak
+export const getKataBijakTv = () => api.get('/pengaturan-tv/kata-bijak')
+export const createKataBijakTv = (data) => api.post('/pengaturan-tv/kata-bijak', data)
+export const updateKataBijakTv = (id, data) => api.put(`/pengaturan-tv/kata-bijak/${id}`, data)
+export const deleteKataBijakTv = (id) => api.delete(`/pengaturan-tv/kata-bijak/${id}`)
+
+// Video
+export const getVideoTv = () => api.get('/pengaturan-tv/video')
+export const createVideoTv = (data) => api.post('/pengaturan-tv/video', data)
+export const updateVideoTv = (id, data) => api.put(`/pengaturan-tv/video/${id}`, data)
+export const deleteVideoTv = (id) => api.delete(`/pengaturan-tv/video/${id}`)
+
 export default api
 
