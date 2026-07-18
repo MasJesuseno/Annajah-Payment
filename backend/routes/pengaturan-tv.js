@@ -30,7 +30,7 @@ router.get('/display', async (req, res) => {
 
     // Ambil pengaturan sekolah (logo, nama, visi, misi)
     const [settings] = await db.execute(
-      "SELECT `key`, `value` FROM pengaturan WHERE `key` IN ('nama_sekolah', 'logo', 'visi', 'misi', 'alamat_sekolah')"
+      "SELECT `key`, `value` FROM pengaturan WHERE `key` IN ('nama_sekolah', 'logo', 'visi', 'misi', 'alamat_sekolah', 'latitude', 'longitude')"
     );
     const pengaturan = {};
     for (const row of settings) {
