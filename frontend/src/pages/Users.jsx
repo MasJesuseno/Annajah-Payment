@@ -128,6 +128,13 @@ export default function Users() {
         </span>
       )
     }
+    if (role === 'admin_web') {
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-700">
+          <Shield className="w-3 h-3" /> Admin Web
+        </span>
+      )
+    }
     if (role === 'guru') {
       return (              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
           <GraduationCap className="w-3 h-3" /> Karyawan
@@ -323,7 +330,7 @@ export default function Users() {
               {/* Role */}
               <div>
                 <label className="block text-sm font-medium text-gray-600 mb-1.5">Role</label>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 gap-3">
                   <button
                     type="button"
                     onClick={() => setForm(prev => ({ ...prev, role: 'admin' }))}
@@ -336,6 +343,19 @@ export default function Users() {
                     <Shield className="w-5 h-5 mx-auto mb-1" />
                     Admin
                     <p className="text-[10px] font-normal mt-0.5 opacity-70">Akses penuh</p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setForm(prev => ({ ...prev, role: 'admin_web' }))}
+                    className={`p-3 rounded-xl border-2 text-sm font-medium transition-all ${
+                      form.role === 'admin_web'
+                        ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
+                        : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                    }`}
+                  >
+                    <Shield className="w-5 h-5 mx-auto mb-1" />
+                    Admin Web
+                    <p className="text-[10px] font-normal mt-0.5 opacity-70">Akses penuh web</p>
                   </button>
                   <button
                     type="button"

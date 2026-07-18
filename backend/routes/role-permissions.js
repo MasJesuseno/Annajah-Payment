@@ -51,7 +51,7 @@ router.put('/:role', adminOnly, async (req, res) => {
     const { permissions } = req.body; // { menu_path: true/false, ... }
     const db = await getDatabase();
 
-    const validRoles = ['admin', 'bendahara', 'guru'];
+    const validRoles = ['admin', 'admin_web', 'bendahara', 'guru'];
     if (!validRoles.includes(role)) {
       return res.status(400).json({ message: 'Role tidak valid' });
     }

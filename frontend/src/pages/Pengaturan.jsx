@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { getPengaturan, updatePengaturan, testSmtpConnection, uploadLogo, deleteLogo, getTahunAjaran, uploadTtd, deleteTtd } from '../api'
-import { Building2, Save, MapPin, Phone, Mail, Globe, Hash, BookOpen, User, Shield, Send, Server, Key, CheckCircle, XCircle, Image, Upload, Clock, Palette, RotateCcw, Pen, Eye, EyeOff, CreditCard, Lightbulb, Target } from 'lucide-react'
+import { Building2, Save, MapPin, Phone, Mail, Globe, Hash, BookOpen, User, Shield, Send, Server, Key, CheckCircle, XCircle, Image, Upload, Clock, Palette, RotateCcw, Pen, Eye, EyeOff, CreditCard, Lightbulb, Target, Navigation } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 export default function Pengaturan() {
@@ -34,6 +34,8 @@ export default function Pengaturan() {
     tampilkan_ttd_ketua_panitia_ppdb: '1',
     visi: '',
     misi: '',
+    latitude: '',
+    longitude: '',
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -331,6 +333,45 @@ export default function Pengaturan() {
                 </div>
               </div>
             ))}
+          </div>
+
+          {/* Koordinat GPS untuk Cuaca TV */}
+          <div className="mt-4 pt-4 border-t border-gray-100">
+            <div className="flex items-center gap-2 mb-3">
+              <Navigation className="w-4 h-4 text-gray-400" />
+              <h3 className="text-sm font-semibold text-gray-700">Koordinat GPS (untuk Cuaca TV)</h3>
+            </div>
+            <p className="text-xs text-gray-400 mb-3">Koordinat lokasi sekolah yang digunakan untuk menampilkan data cuaca di halaman TV Display</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-1.5">Latitude (Lintang)</label>
+                <div className="relative">
+                  <Navigation className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="text"
+                    className="input-field pl-10"
+                    value={settings.latitude || ''}
+                    onChange={e => handleChange('latitude', e.target.value)}
+                    placeholder="-6.2088"
+                  />
+                </div>
+                <p className="text-xs text-gray-400 mt-1">Contoh: -6.2088 (untuk wilayah Jakarta)</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-1.5">Longitude (Bujur)</label>
+                <div className="relative">
+                  <Navigation className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="text"
+                    className="input-field pl-10"
+                    value={settings.longitude || ''}
+                    onChange={e => handleChange('longitude', e.target.value)}
+                    placeholder="106.8456"
+                  />
+                </div>
+                <p className="text-xs text-gray-400 mt-1">Contoh: 106.8456 (untuk wilayah Jakarta)</p>
+              </div>
+            </div>
           </div>
         </div>
 

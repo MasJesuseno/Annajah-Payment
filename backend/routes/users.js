@@ -47,7 +47,7 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ message: 'Password minimal 6 karakter' });
     }
 
-    const validRoles = ['admin', 'bendahara', 'guru'];
+    const validRoles = ['admin', 'admin_web', 'bendahara', 'guru'];
     const userRole = validRoles.includes(role) ? role : 'bendahara';
 
     const [existingRows] = await db.execute('SELECT id FROM users WHERE username = ?', [username]);
@@ -122,7 +122,7 @@ router.put('/:id', async (req, res) => {
     if (username) { updateFields.push('username = ?'); params.push(username); }
     if (nama) { updateFields.push('nama = ?'); params.push(nama); }
     if (role) {
-      const validRoles = ['admin', 'bendahara', 'guru'];
+      const validRoles = ['admin', 'admin_web', 'bendahara', 'guru'];
       if (validRoles.includes(role)) {
         updateFields.push('role = ?');
         params.push(role);

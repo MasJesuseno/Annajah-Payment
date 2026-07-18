@@ -1,0 +1,125 @@
+--- Kill old node ---
+$ kill -9 615 2>/dev/null; kill -9 1527643 2>/dev/null; kill -9 1527590 2>/dev/null; echo 'Old processes killed'
+Old processes killed
+[exit: 0]
+
+--- Clean PM2 ---
+$ pm2 delete backend-sas 2>/dev/null; pm2 save --force 2>/dev/null; echo 'PM2 cleaned'
+[PM2] Applying action deleteProcessId on app [backend-sas](ids: [ 2 ])
+[PM2] [backend-sas](2) ✓
+┌────┬─────────────────┬─────────────┬─────────┬─────────┬──────────┬────────┬──────┬───────────┬──────────┬──────────┬──────────┬──────────┐
+│ id │ name            │ namespace   │ version │ mode    │ pid      │ uptime │ ↺    │ status    │ cpu      │ mem      │ user     │ watching │
+├────┼─────────────────┼─────────────┼─────────┼─────────┼──────────┼────────┼──────┼───────────┼──────────┼──────────┼─
+[exit: 0]
+
+--- Clean PM2 again ---
+$ pm2 delete backend-sas 2>/dev/null; pm2 save --force 2>/dev/null; echo 'PM2 double cleaned'
+[PM2] Saving current process list...
+[PM2] Successfully saved in /root/.pm2/dump.pm2
+PM2 double cleaned
+[exit: 0]
+
+--- Wait ---
+$ sleep 2
+[exit: 0]
+
+--- Start fresh ---
+$ cd /var/www/db_sas_annajah/backend && pm2 start server.js --name backend-sas --update-env 2>&1 | tail -5
+├────┼─────────────────┼─────────────┼─────────┼─────────┼──────────┼────────┼──────┼───────────┼──────────┼──────────┼──────────┼──────────┤
+│ 3  │ backend-sas     │ default     │ 1.0.0   │ fork    │ 1528173  │ 0s     │ 0    │ online    │ 0%       │ 22.9mb   │ root     │ disabled │
+│ 0  │ backend-sas     │ default     │ 1.0.0   │ fork    │ 1528121  │ 5s     │ 1    │ online    │ 0%       │ 108.0mb  │ root     │ disabled │
+│    │                 │             │         │         │          │     
+[exit: 0]
+
+--- Save PM2 ---
+$ pm2 save --force 2>&1
+[PM2] Saving current process list...
+[PM2] Successfully saved in /root/.pm2/dump.pm2
+[exit: 0]
+
+--- Wait for startup ---
+$ sleep 3
+[exit: 0]
+
+--- Verify PM2 ---
+$ pm2 list 2>&1 | head -8
+┌────┬─────────────────┬─────────────┬─────────┬─────────┬──────────┬────────┬──────┬───────────┬──────────┬──────────┬──────────┬──────────┐
+│ id │ name            │ namespace   │ version │ mode    │ pid      │ uptime │ ↺    │ status    │ cpu      │ mem      │ user     │ watching │
+├────┼─────────────────┼─────────────┼─────────┼─────────┼──────────┼────────┼──────┼───────────┼──────────┼──────────┼──────────┼──────────┤
+│ 3  │ backend-sas     │ default     │ 1.0.0   │ fork    │ 1528226  │ 0s  
+[exit: 0]
+
+--- Verify port 5000 ---
+$ ss -tlnp | grep 5000
+LISTEN 0      511                              *:5000             *:*    users:(("node /var/www/d",pid=1528121,fd=20))
+[exit: 0]
+
+--- Check existing ---
+$ mysql -u root -p'$a$Login4dmin' dbannajah -e "
+                SELECT COUNT(*) as total FROM role_permissions 
+                WHERE menu_path LIKE '/pengaturan-tv%' AND role='admin';
+            " 2>&1
+mysql: [Warning] Using a password on the command line interface can be insecure.
+total
+0
+[exit: 0]
+
+--- Insert permissions ---
+$ mysql -u root -p'$a$Login4dmin' dbannajah -e "
+                INSERT IGNORE INTO role_permissions (role, menu_path, can_access) VALUES
+                ('admin', '/pengaturan-tv/agenda', 1),
+                ('admin', '/pengaturan-tv/kata-bijak', 1),
+                ('admin', '/pengaturan-tv/video', 1),
+                ('bendahara', '/pengaturan-tv/agenda', 0),
+                ('bendahara', '/pengaturan-tv/kata-bijak', 0),
+                ('bendahara', '/pengaturan-tv/video', 0),
+                ('guru', '/pengaturan-tv/agenda', 0),
+                ('guru', '/pengaturan-tv/kata-bijak', 0),
+                ('guru', '/pengaturan-tv/video', 0);
+                SELECT 'INSERT OK' as status;
+            " 2>&1
+mysql: [Warning] Using a password on the command line interface can be insecure.
+status
+INSERT OK
+[exit: 0]
+
+--- Verify permissions ---
+$ mysql -u root -p'$a$Login4dmin' dbannajah -e "
+                SELECT menu_path, role, can_access FROM role_permissions 
+                WHERE menu_path LIKE '/pengaturan-tv%' ORDER BY role, menu_path;
+            " 2>&1
+mysql: [Warning] Using a password on the command line interface can be insecure.
+menu_path	role	can_access
+/pengaturan-tv/agenda	admin	1
+/pengaturan-tv/kata-bijak	admin	1
+/pengaturan-tv/video	admin	1
+/pengaturan-tv/agenda	bendahara	0
+/pengaturan-tv/kata-bijak	bendahara	0
+/pengaturan-tv/video	bendahara	0
+/pengaturan-tv/agenda	guru	0
+/pengaturan-tv/kata-bijak	guru	0
+/pengaturan-tv/video	guru	0
+[exit: 0]
+
+--- PM2 status ---
+$ pm2 list 2>&1 | head -8
+┌────┬─────────────────┬─────────────┬─────────┬─────────┬──────────┬────────┬──────┬───────────┬──────────┬──────────┬──────────┬──────────┐
+│ id │ name            │ namespace   │ version │ mode    │ pid      │ uptime │ ↺    │ status    │ cpu      │ mem      │ user     │ watching │
+├────┼─────────────────┼─────────────┼─────────┼─────────┼──────────┼────────┼──────┼───────────┼──────────┼──────────┼──────────┼──────────┤
+│ 3  │ backend-sas     │ default     │ 1.0.0   │ fork    │ 1528277  │ 0s  
+[exit: 0]
+
+--- API test ---
+$ curl -s -o /dev/null -w '%{http_code}' http://localhost:5000/api/pengaturan-tv/display && echo ' - API display OK'
+200 - API display OK
+[exit: 0]
+
+--- Frontend test ---
+$ curl -s -o /dev/null -w '%{http_code}' http://localhost:80/ && echo ' - Frontend OK'
+200 - Frontend OK
+[exit: 0]
+
+--- Login test ---
+$ curl -s -o /dev/null -w '%{http_code}' http://localhost:80/login && echo ' - Login page OK'
+200 - Login page OK
+[exit: 0]

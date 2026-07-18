@@ -65,35 +65,22 @@ export default function TvDisplay() {
     return () => clearTimeout(timer)
   }, [soundActivated])
 
-  // Fetch weather from Open-Meteo
-  const fetchWeather = useCallback(async (schoolName) => {
+  // Fetch weather from Open-Meteo using coordinates from pengaturan
+  const fetchWeather = useCallback(async (lat, lon) => {
     try {
-      // Step 1: Geocode school name to get coordinates
-      const geoRes = await fetch(
-        `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(schoolName)}&count=1&language=id&format=json`
-      )
-      const geoData = await geoRes.json()
+      const latitude = parseFloat(lat) || -6.2088
+      const longitude = parseFloat(lon) || 106.8456
 
-      let lat = -6.2088
-      let lon = 106.8456
-      let city = 'Jakarta'
+      setLocationName(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`)
 
-      if (geoData.results && geoData.results.length > 0) {
-        lat = geoData.results[0].latitude
-        lon = geoData.results[0].longitude
-        city = geoData.results[0].name
-      }
-
-      setLocationName(city)
-
-      // Step 2: Fetch current weather + 3-day forecast
+      // Fetch current weather + 3-day forecast
       const weatherRes = await fetch(
-        `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code,relative_humidity_2m&daily=temperature_2m_max,temperature_2m_min,weather_code&forecast_days=3&timezone=auto`
+        `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weather_code,relative_humidity_2m&daily=temperature_2m_max,temperature_2m_min,weather_code&forecast_days=3&timezone=auto`
       )
       const weatherData = await weatherRes.json()
       setWeather(weatherData.current)
 
-      // Extract 3-day forecast (skip today/index 0, take next 2 days)
+      // Extract 3-day forecast (skip today, take next 2 days)
       if (weatherData.daily) {
         const forecast = []
         for (let i = 1; i < weatherData.daily.time.length; i++) {
@@ -113,17 +100,21 @@ export default function TvDisplay() {
     }
   }, [])
 
-  // When data loads, fetch weather
+  // When data loads, fetch weather using coordinates from pengaturan
   useEffect(() => {
-    if (!data?.pengaturan?.nama_sekolah) return
-    fetchWeather(data.pengaturan.nama_sekolah)
+    if (!data?.pengaturan) return
+    const lat = data.pengaturan.latitude
+    const lon = data.pengaturan.longitude
+    if (!lat || !lon) return
+
+    fetchWeather(lat, lon)
 
     // Refresh weather every 15 minutes
     const interval = setInterval(() => {
-      fetchWeather(data.pengaturan.nama_sekolah)
+      fetchWeather(lat, lon)
     }, 15 * 60 * 1000)
     return () => clearInterval(interval)
-  }, [data?.pengaturan?.nama_sekolah, fetchWeather])
+  }, [data?.pengaturan?.latitude, data?.pengaturan?.longitude, fetchWeather])
 
   // Get short day name for forecast (Besok, Lusa, or weekday)
   const getDayName = (dateStr, idx) => {

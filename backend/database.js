@@ -526,6 +526,18 @@ async function initDatabase() {
       await conn.execute(`ALTER TABLE tv_video ADD COLUMN deskripsi TEXT DEFAULT NULL`);
     } catch (e) {}
 
+    // Add latitude & longitude to pengaturan for TV weather location
+    try {
+      const [latExists] = await conn.execute("SELECT COUNT(*) as count FROM pengaturan WHERE `key` = 'latitude'");
+      if (latExists[0].count === 0) {
+        await conn.execute("INSERT INTO pengaturan (`key`, `value`) VALUES ('latitude', '-6.2088')");
+        await conn.execute("INSERT INTO pengaturan (`key`, `value`) VALUES ('longitude', '106.8456')");
+        console.log('[pengaturan] Default latitude/longitude added');
+      }
+    } catch (e) {
+      console.log('[pengaturan] Latitude/longitude migration error (non-fatal):', e.message);
+    }
+
     // Tambah menu /log-aktivitas untuk role yang sudah ada (migrasi database existing)
     try {
       const [logPathExists] = await conn.execute(
@@ -536,6 +548,11 @@ async function initDatabase() {
         await conn.execute(
           'INSERT INTO role_permissions (role, menu_path, can_access) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE can_access = VALUES(can_access)',
           ['admin', '/log-aktivitas', 1]
+        );
+        // Admin Web: full access
+        await conn.execute(
+          'INSERT INTO role_permissions (role, menu_path, can_access) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE can_access = VALUES(can_access)',
+          ['admin_web', '/log-aktivitas', 1]
         );
         // Bendahara: no access
         await conn.execute(
@@ -566,6 +583,10 @@ async function initDatabase() {
           );
           await conn.execute(
             'INSERT INTO role_permissions (role, menu_path, can_access) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE can_access = VALUES(can_access)',
+            ['admin_web', path, 1]
+          );
+          await conn.execute(
+            'INSERT INTO role_permissions (role, menu_path, can_access) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE can_access = VALUES(can_access)',
             ['bendahara', path, 0]
           );
           await conn.execute(
@@ -577,6 +598,36 @@ async function initDatabase() {
       }
     } catch (e) {
       console.log('[role_permissions] Pengaturan TV migration error (non-fatal):', e.message);
+    }
+
+    // Seed role_permissions untuk admin_web jika belum ada (migrasi database existing)
+    try {
+      const [adminWebPermCount] = await conn.execute("SELECT COUNT(*) as count FROM role_permissions WHERE role = 'admin_web'");
+      if (adminWebPermCount[0].count === 0) {
+        const allMenusAdminWeb = [
+          '/dashboard', '/guru-dashboard', '/profil-saya', '/daftar-kehadiran-saya', '/kehadiran-guru-saya',
+          '/siswa-wali', '/kehadiran-wali', '/input-kehadiran-wali',
+          '/guru', '/kehadiran-guru', '/rekap-kehadiran-guru',
+          '/siswa', '/alumni', '/kelas', '/kehadiran', '/kehadiran/bulk',
+          '/ekstrakurikuler', '/ekstrakurikuler/peserta', '/ekstrakurikuler/input-peserta', '/ekstrakurikuler/rekap',
+          '/bimbingan-konseling', '/bimbingan-konseling/input', '/bimbingan-konseling/rekap',
+          '/nilai-siswa', '/nilai-siswa/input', '/nilai-siswa/rekap', '/periode-penilaian',
+          '/prestasi-siswa', '/prestasi-siswa/input', '/prestasi-siswa/rekap', '/prestasi-siswa/pengaturan',
+          '/mata-pelajaran',
+          '/ppdb/admin', '/ppdb/pengaturan',
+          '/transaksi', '/laporan', '/pembayaran',
+          '/pengaturan', '/tahun-ajaran', '/users', '/database',
+          '/role-permissions', '/log-aktivitas',
+          '/pengaturan-tv/agenda', '/pengaturan-tv/kata-bijak', '/pengaturan-tv/video',
+        ];
+        const insertPermAdminWeb = 'INSERT INTO role_permissions (role, menu_path, can_access) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE can_access = VALUES(can_access)';
+        for (const path of allMenusAdminWeb) {
+          await conn.execute(insertPermAdminWeb, ['admin_web', path, 1]);
+        }
+        console.log('[role_permissions] Admin Web permissions seeded');
+      }
+    } catch (e) {
+      console.log('[role_permissions] Admin Web seed error (non-fatal):', e.message);
     }
 
     // Migrate ppdb_access to role_permissions for guru role if not yet migrated
@@ -628,6 +679,11 @@ async function initDatabase() {
         ];
         for (const path of allMenus) {
           await conn.execute(insertPerm, ['guru', path, guruAccess.includes(path) ? 1 : 0]);
+        }
+
+        // Admin Web: full access (same as admin)
+        for (const path of allMenus) {
+          await conn.execute(insertPerm, ['admin_web', path, 1]);
         }
       }
     } catch (e) {
@@ -723,6 +779,8 @@ async function seedData() {
         ['tampilkan_ttd_ketua_panitia_ppdb', '1'],
         ['visi', 'Menjadi sekolah unggulan yang menghasilkan generasi beriman, berilmu, dan berakhlak mulia.'],
         ['misi', '1. Menyelenggarakan pendidikan yang berkualitas dan berkarakter\n2. Mengembangkan potensi siswa secara optimal\n3. Membangun lingkungan sekolah yang islami dan kondusif\n4. Menjalin kerjasama yang harmonis dengan orang tua dan masyarakat'],
+        ['latitude', '-6.2088'],
+        ['longitude', '106.8456'],
       ];
       const insertSetting = 'INSERT INTO pengaturan (`key`, `value`) VALUES (?, ?)';
       for (const [key, value] of defaultSettings) {

@@ -5,6 +5,7 @@ import toast from 'react-hot-toast'
 
 const ROLE_CONFIG = [
   { id: 'admin', label: 'Admin', icon: Shield, color: 'purple' },
+  { id: 'admin_web', label: 'Admin Web', icon: Shield, color: 'indigo' },
   { id: 'bendahara', label: 'Bendahara', icon: CreditCard, color: 'blue' },
   { id: 'guru', label: 'Karyawan', icon: GraduationCap, color: 'emerald' },
 ]
@@ -108,6 +109,14 @@ const MENU_GROUPS = [
       { path: '/log-aktivitas', label: 'Log Aktivitas' },
     ],
   },
+  {
+    label: 'Pengaturan TV',
+    items: [
+      { path: '/pengaturan-tv/agenda', label: 'Agenda' },
+      { path: '/pengaturan-tv/kata-bijak', label: 'Kata Bijak' },
+      { path: '/pengaturan-tv/video', label: 'Video' },
+    ],
+  },
 ]
 
 export default function RolePermissions() {
@@ -125,7 +134,7 @@ export default function RolePermissions() {
     setLoading(true)
     try {
       const res = await getRolePermissions()
-      const grouped = { admin: {}, bendahara: {}, guru: {} }
+      const grouped = { admin: {}, admin_web: {}, bendahara: {}, guru: {} }
       for (const row of res.data) {
         if (!grouped[row.role]) continue
         grouped[row.role][row.menu_path] = Boolean(row.can_access)
@@ -174,6 +183,7 @@ export default function RolePermissions() {
 
   const colorMap = {
     purple: { bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-700', active: 'bg-purple-500', ring: 'ring-purple-400' },
+    indigo: { bg: 'bg-indigo-50', border: 'border-indigo-200', text: 'text-indigo-700', active: 'bg-indigo-500', ring: 'ring-indigo-400' },
     blue: { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700', active: 'bg-blue-500', ring: 'ring-blue-400' },
     emerald: { bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-700', active: 'bg-emerald-500', ring: 'ring-emerald-400' },
   }
@@ -225,7 +235,7 @@ export default function RolePermissions() {
               }`}
             >
               <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                isActive ? `bg-gradient-to-br ${role.id === 'admin' ? 'from-purple-500 to-purple-600' : role.id === 'bendahara' ? 'from-blue-500 to-blue-600' : 'from-emerald-500 to-emerald-600'} text-white` : 'bg-gray-100 text-gray-400'
+                isActive ? `bg-gradient-to-br ${role.id === 'admin' ? 'from-purple-500 to-purple-600' : role.id === 'admin_web' ? 'from-indigo-500 to-indigo-600' : role.id === 'bendahara' ? 'from-blue-500 to-blue-600' : 'from-emerald-500 to-emerald-600'} text-white` : 'bg-gray-100 text-gray-400'
               }`}>
                 <Icon className="w-4 h-4" />
               </div>
