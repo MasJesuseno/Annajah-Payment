@@ -10,11 +10,11 @@ export default function TvDisplay() {
   const [currentKataIndex, setCurrentKataIndex] = useState(0)
   const [logoError, setLogoError] = useState(false)
   const [currentTime, setCurrentTime] = useState(new Date())
-  const [isMuted, setIsMuted] = useState(true)
+  const [isMuted, setIsMuted] = useState(true)     // Awalnya mute untuk autoplay policy
   const [soundActivated, setSoundActivated] = useState(false)
   const [videoProgress, setVideoProgress] = useState(0)
   const [videoDuration, setVideoDuration] = useState(0)
-  const [showTooltip, setShowTooltip] = useState(true)
+  const [showTooltip, setShowTooltip] = useState(false) // Tooltip dimatikan karena auto unmute
   const [weather, setWeather] = useState(null)
   const [weatherForecast, setWeatherForecast] = useState([])
   const [weatherLoading, setWeatherLoading] = useState(true)
@@ -23,6 +23,8 @@ export default function TvDisplay() {
   const playerRef = useRef(null)
   const apiReadyRef = useRef(false)
   const progressIntervalRef = useRef(null)
+  const currentVideoIdRef = useRef(null) // Track current video ID to prevent unnecessary recreation
+  const autoUnmuteRef = useRef(null) // Track auto-unmute timeout for cleanup
   const agendaContainerRef = useRef(null)
   const agendaContentRef = useRef(null)
   const [agendaScroll, setAgendaScroll] = useState({ active: false, distance: 0 })
@@ -205,11 +207,19 @@ export default function TvDisplay() {
 
   // Create/destroy YouTube player when video changes
   useEffect(() => {
-    if (!data?.videos?.length || !apiReadyRef.current) return
+    if (!videos?.length || !apiReadyRef.current) return
 
-    const currentVideo = data.videos[currentVideoIndex]
+    const currentVideo = videos[currentVideoIndex]
     const youtubeId = currentVideo ? getYoutubeId(currentVideo.link_video) : null
     if (!youtubeId || !videoContainerRef.current) return
+
+    // Jangan recreate player jika video yang sama masih diputar
+    // (mencegah restart saat data di-refresh)
+    if (playerRef.current && currentVideoIdRef.current === youtubeId) {
+      return
+    }
+
+    currentVideoIdRef.current = youtubeId
 
     // Destroy existing player
     if (playerRef.current) {
@@ -241,15 +251,31 @@ export default function TvDisplay() {
       },
       events: {
         onReady: (event) => {
+          // Play dulu dalam keadaan mute (biar browser ijinin autoplay)
           event.target.playVideo()
           startProgressTracker()
+          // Auto unmute sebentar setelah video mulai (browser policy: muted autoplay allowed)
+          autoUnmuteRef.current = setTimeout(() => {
+            event.target.unMute()
+            event.target.setVolume(100)
+            setIsMuted(false)
+            setSoundActivated(true)
+            autoUnmuteRef.current = null
+          }, 200)
         },
         onStateChange: (event) => {
           // YT.PlayerState.ENDED = 0
-          if (event.data === 0 && data.videos.length > 1) {
-            setTimeout(() => {
-              setCurrentVideoIndex(prev => (prev + 1) % data.videos.length)
-            }, 300)
+          if (event.data === 0) {
+            if (videos.length === 1) {
+              // Jika hanya 1 video, putar ulang dari awal
+              event.target.seekTo(0)
+              event.target.playVideo()
+            } else {
+              // Pindah ke video berikutnya
+              setTimeout(() => {
+                setCurrentVideoIndex(prev => (prev + 1) % videos.length)
+              }, 300)
+            }
           }
           if (event.data === 1) {
             startProgressTracker()
@@ -262,14 +288,20 @@ export default function TvDisplay() {
     })
 
     return () => {
+      if (autoUnmuteRef.current) {
+        clearTimeout(autoUnmuteRef.current)
+        autoUnmuteRef.current = null
+      }
       if (progressIntervalRef.current) clearInterval(progressIntervalRef.current)
       if (playerRef.current) {
         playerRef.current.destroy()
         playerRef.current = null
       }
     }
+    // NOTE: hanya bergantung pada currentVideoIndex dan videos (bukan data?.videos)
+    // agar player tidak recreate saat fetchData
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data?.videos, currentVideoIndex])
+  }, [currentVideoIndex, videos])
 
   // Navigate to previous video
   const prevVideo = useCallback(() => {
