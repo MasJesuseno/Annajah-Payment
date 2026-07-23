@@ -13,10 +13,10 @@ conn.on('ready', async () => {
 
   // 1. Check response headers for image
   console.log('=== RESPONSE HEADERS FOTO KEHADIRAN ===');
-  console.log(await run(`curl -s -D - "http://localhost:5000/uploads/kehadiran-guru/absen_1780649086165_8nykp9.jpg" -o /dev/null 2>/dev/null`));
+  console.log(await run(`curl -s -D - "http://localhost:3001/uploads/kehadiran-guru/absen_1780649086165_8nykp9.jpg" -o /dev/null 2>/dev/null`));
 
   console.log('\n=== RESPONSE HEADERS FOTO GURU ===');
-  console.log(await run('for f in /var/www/db_sas_annajah/backend/uploads/guru/*.jpg; do echo "=== $(basename $f) ==="; curl -s -D - "http://localhost:5000/uploads/guru/$(basename $f)" -o /dev/null 2>/dev/null; echo; done'));
+  console.log(await run('for f in /var/www/db_sas_annajah/uploads/guru/*.jpg; do echo "=== $(basename $f) ==="; curl -s -D - "http://localhost:3001/uploads/guru/$(basename $f)" -o /dev/null 2>/dev/null; echo; done'));
 
   // 2. Check if domain (via nginx) returns same headers
   console.log('\n=== VIA DOMAIN (localhost nginx) ===');

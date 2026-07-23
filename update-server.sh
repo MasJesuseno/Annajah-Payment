@@ -45,16 +45,14 @@ echo "📥 [3/6] Mengambil update terbaru dari Git..."
 git pull origin main
 echo ""
 
-# ── 4. Install Backend Dependencies ──
-echo "📦 [4/6] Install dependensi backend..."
-cd backend
+# ── 4. Install Server Dependencies (backend sekarang di root) ──
+echo "📦 [4/6] Install dependensi server..."
 npm install --production
-cd ..
 echo ""
 
-# ── 5. Build Frontend ──
-echo "🎨 [5/6] Build ulang frontend..."
-cd frontend
+# ── 5. Build Client (Frontend) ──
+echo "🎨 [5/6] Build ulang client (frontend)..."
+cd client
 npm install
 npm run build
 cd ..
@@ -62,9 +60,7 @@ echo ""
 
 # ── 6. Restart Aplikasi ──
 echo "🔄 [6/6] Restart aplikasi dengan PM2..."
-cd backend
 pm2 restart backend-sas
-cd ..
 echo ""
 
 echo "╔══════════════════════════════════════════════════╗"

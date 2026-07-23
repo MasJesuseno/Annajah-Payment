@@ -17,8 +17,8 @@ const EXCLUDE = new Set([
   'check_foto*', 'check_fast*', 'check_nginx*',
   'check_frontend*', 'check_table*', 'check_headers*',
   'check_build*', 'check_comprehensive*',
-  'backend/node_modules', 'backend/uploads',
-  'frontend/node_modules', 'frontend/dist',
+  'client/node_modules', 'client/dist',
+  'node_modules', 'uploads',
 ]);
 
 function shouldExclude(relativePath) {
@@ -96,14 +96,14 @@ async function upload() {
     const SSH2 = require('ssh2');
     
     const commands = [
-      `cd ${REMOTE_APP}/backend && npm install --production 2>&1 | tail -5`,
-      `cd ${REMOTE_APP}/frontend && npm install 2>&1 | tail -5`,
-      `cd ${REMOTE_APP}/frontend && npm run build 2>&1 | tail -10`,
-      `cd ${REMOTE_APP}/backend && pm2 restart backend-sas 2>&1`,
+      `cd ${REMOTE_APP} && npm install --production 2>&1 | tail -5`,
+      `cd ${REMOTE_APP}/client && npm install 2>&1 | tail -5`,
+      `cd ${REMOTE_APP}/client && npm run build 2>&1 | tail -10`,
+      `cd ${REMOTE_APP} && pm2 restart backend-sas 2>&1`,
       `echo "=== VERIFY ===" && pm2 list 2>&1 | head -5`,
-      `ls ${REMOTE_APP}/frontend/dist/ 2>/dev/null | head -5 || echo "DIST_NOT_FOUND"`,
-      `curl -s -o /dev/null -w "%{http_code}" http://localhost:5000/uploads/kehadiran-guru/`,
-      `curl -s -o /dev/null -w " %{http_code}" http://localhost:5000/uploads/guru/`,
+      `ls ${REMOTE_APP}/client/dist/ 2>/dev/null | head -5 || echo "DIST_NOT_FOUND"`,
+      `curl -s -o /dev/null -w "%{http_code}" http://localhost:3001/uploads/kehadiran-guru/`,
+      `curl -s -o /dev/null -w " %{http_code}" http://localhost:3001/uploads/guru/`,
     ];
 
     const conn = new SSH2.Client();

@@ -25,8 +25,8 @@ conn.on('ready', async () => {
   console.log(await run('ls -la /var/www/db_sas_annajah/uploads/guru/'));
   console.log('');
 
-  console.log('=== Backend health ===');
-  console.log(await run('curl -s -o /dev/null -w "Backend: HTTP %{http_code}\n" http://localhost:5000/'));
+  console.log('=== Server health ===');
+  console.log(await run('curl -s -o /dev/null -w "Server: HTTP %{http_code}\n" http://localhost:3001/'));
   console.log('');
 
   console.log('=== Photo access via backend ===');
@@ -34,14 +34,14 @@ conn.on('ready', async () => {
   const kgList = kgFiles.split('\n').filter(f => f.endsWith('.jpg'));
   for (const f of kgList) {
     const fn = f.trim().split(/\s+/).pop();
-    console.log(await run(`curl -s -o /dev/null -w "kehadiran-guru/${fn}: HTTP %{http_code} (%{content_type})\n" "http://localhost:5000/uploads/kehadiran-guru/${fn}"`));
+    console.log(await run(`curl -s -o /dev/null -w "kehadiran-guru/${fn}: HTTP %{http_code} (%{content_type})\n" "http://localhost:3001/uploads/kehadiran-guru/${fn}"`));
   }
 
   const guruFiles = await run('ls /var/www/db_sas_annajah/uploads/guru/');
   const guruList = guruFiles.split('\n').filter(f => f.endsWith('.jpg') || f.endsWith('.png'));
   for (const f of guruList) {
     const fn = f.trim().split(/\s+/).pop();
-    console.log(await run(`curl -s -o /dev/null -w "guru/${fn}: HTTP %{http_code} (%{content_type})\n" "http://localhost:5000/uploads/guru/${fn}"`));
+    console.log(await run(`curl -s -o /dev/null -w "guru/${fn}: HTTP %{http_code} (%{content_type})\n" "http://localhost:3001/uploads/guru/${fn}"`));
   }
   console.log('');
 

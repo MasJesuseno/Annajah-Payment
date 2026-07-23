@@ -41,22 +41,22 @@ async function main() {
     r = await runCmd(conn, 'ls -la /var/www/db_sas_annajah/backend/uploads/guru/ 2>&1');
     console.log(r.stdout || r.stderr);
     
-    // 3. Cek frontend build
-    console.log('\n=== FRONTEND BUILD ===');
-    r = await runCmd(conn, 'ls -la /var/www/db_sas_annajah/frontend/dist/assets/ 2>&1 | head -10');
+    // 3. Cek client build
+    console.log('\n=== CLIENT BUILD ===');
+    r = await runCmd(conn, 'ls -la /var/www/db_sas_annajah/client/dist/assets/ 2>&1 | head -10');
     console.log(r.stdout || r.stderr);
     
-    // 4. Cek port backend
-    console.log('\n=== BACKEND PORT ===');
-    r = await runCmd(conn, 'ss -tlnp | grep 5000 2>&1 || netstat -tlnp 2>/dev/null | grep 5000');
+    // 4. Cek port server
+    console.log('\n=== SERVER PORT ===');
+    r = await runCmd(conn, 'ss -tlnp | grep 3000 2>&1 || netstat -tlnp 2>/dev/null | grep 3000');
     console.log(r.stdout || r.stderr);
     
     // 5. Test akses foto langsung
     console.log('\n=== TEST AKSES FOTO ===');
-    r = await runCmd(conn, 'curl -s -o /dev/null -w "HTTP %{http_code} (%{size_download} bytes)" http://127.0.0.1:5000/uploads/kehadiran-guru/ 2>&1; echo');
-    console.log('Backend /uploads:', r.stdout || r.stderr);
+    r = await runCmd(conn, 'curl -s -o /dev/null -w "HTTP %{http_code} (%{size_download} bytes)" http://127.0.0.1:3001/uploads/kehadiran-guru/ 2>&1; echo');
+    console.log('Server /uploads:', r.stdout || r.stderr);
     
-    r = await runCmd(conn, 'for f in /var/www/db_sas_annajah/backend/uploads/kehadiran-guru/*; do echo "$(basename $f): $(curl -s -o /dev/null -w \"%{http_code}\" http://127.0.0.1:5000/uploads/kehadiran-guru/$(basename $f))"; done 2>&1');
+    r = await runCmd(conn, 'for f in /var/www/db_sas_annajah/uploads/kehadiran-guru/*; do echo "$(basename $f): $(curl -s -o /dev/null -w \"%{http_code}\" http://127.0.0.1:3001/uploads/kehadiran-guru/$(basename $f))"; done 2>&1');
     console.log(r.stdout || r.stderr);
     
     conn.end();

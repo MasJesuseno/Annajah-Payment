@@ -37,24 +37,24 @@ async function main() {
       let r = await runCmd(conn, `cd ${APP_DIR} && git pull origin main 2>&1`);
       console.log(r.stdout || r.stderr);
       
-      // Step 2: Backend install
-      console.log('\n📦 [2/5] Install backend dependencies...');
-      r = await runCmd(conn, `cd ${APP_DIR}/backend && npm install --production 2>&1 | tail -5`);
+      // Step 2: Server deps install (backend sekarang di root)
+      console.log('\n📦 [2/5] Install server dependencies...');
+      r = await runCmd(conn, `cd ${APP_DIR} && npm install --production 2>&1 | tail -5`);
       console.log(r.stdout || r.stderr);
       
-      // Step 3: Frontend install
-      console.log('\n📦 [3/5] Install frontend dependencies...');
-      r = await runCmd(conn, `cd ${APP_DIR}/frontend && npm install 2>&1 | tail -5`);
+      // Step 3: Client (frontend) install
+      console.log('\n📦 [3/5] Install client dependencies...');
+      r = await runCmd(conn, `cd ${APP_DIR}/client && npm install 2>&1 | tail -5`);
       console.log(r.stdout || r.stderr);
       
-      // Step 4: Build frontend
-      console.log('\n🎨 [4/5] Build frontend...');
-      r = await runCmd(conn, `cd ${APP_DIR}/frontend && npm run build 2>&1 | tail -10`);
+      // Step 4: Build client
+      console.log('\n🎨 [4/5] Build client...');
+      r = await runCmd(conn, `cd ${APP_DIR}/client && npm run build 2>&1 | tail -10`);
       console.log(r.stdout || r.stderr);
       
       // Step 5: Restart PM2
       console.log('\n🔄 [5/5] Restart PM2...');
-      r = await runCmd(conn, `cd ${APP_DIR}/backend && pm2 restart backend-sas 2>&1`);
+      r = await runCmd(conn, `cd ${APP_DIR} && pm2 restart backend-sas 2>&1`);
       console.log(r.stdout || r.stderr);
       
       // Final check

@@ -38,24 +38,22 @@ async function main() {
     r = await run(conn, 'ls -la /var/www/html/ 2>&1 | head -10');
     console.log(r);
 
-    // 4. Cek frontend dist langsung
-    console.log('\n=== CEK FRONTEND DIST ===');
-    r = await run(conn, 'ls -la /var/www/db_sas_annajah/frontend/dist/assets/ 2>&1 | head -10');
+    // 4. Cek client dist langsung
+    console.log('\n=== CEK CLIENT DIST ===');
+    r = await run(conn, 'ls -la /var/www/db_sas_annajah/client/dist/assets/ 2>&1 | head -10');
     console.log(r);
 
-    // 5. Cek apakah ada file index.html di web root
-    console.log('\n=== CIUM INDEX.HTML ===');
-    r = await run(conn, 'cat /var/www/db_sas_annajah/frontend/dist/index.html 2>&1 | head -20');
-    console.log(r);
-    r = await run(conn, 'cat /var/www/html/db_sas_annajah/frontend/dist/index.html 2>&1 | head -5 || echo "not found"');
+    // 5. Cek apakah ada file index.html
+    console.log('\n=== CEK INDEX.HTML ===');
+    r = await run(conn, 'cat /var/www/db_sas_annajah/client/dist/index.html 2>&1 | head -20');
     console.log(r);
 
     // 6. Cek link foto dari dalam server
     console.log('\n=== AKSES FOTO VIA LOCALHOST ===');
-    r = await run(conn, 'curl -s -o /dev/null -w "%{http_code}" http://localhost:5000/uploads/guru/foto_suseno.jpg 2>&1 || echo "error"');
+    r = await run(conn, 'curl -s -o /dev/null -w "%{http_code}" http://localhost:3001/uploads/guru/foto_suseno.jpg 2>&1 || echo "error"');
     console.log('Status foto guru:', r);
     
-    r = await run(conn, 'curl -s -o /dev/null -w "%{http_code}" http://localhost:5000/uploads/kehadiran-guru/ 2>&1 | head -5');
+    r = await run(conn, 'curl -s -o /dev/null -w "%{http_code}" http://localhost:3001/uploads/kehadiran-guru/ 2>&1 | head -5');
     console.log('ls kehadiran-guru:', r);
     
     r = await run(conn, 'ls -la /var/www/db_sas_annajah/backend/uploads/kehadiran-guru/ 2>&1 | head -15');

@@ -24,24 +24,24 @@ async function main() {
 
     // 1. Fix permissions on vite and node_modules/.bin
     console.log('=== 1. FIX PERMISSIONS ===');
-    let r = await run(conn, `chmod -R 755 ${BASE}/frontend/node_modules/.bin/ 2>&1`);
+    let r = await run(conn, `chmod -R 755 ${BASE}/client/node_modules/.bin/ 2>&1`);
     console.log('chmod:', r);
-    r = await run(conn, `ls -la ${BASE}/frontend/node_modules/.bin/vite 2>&1`);
+    r = await run(conn, `ls -la ${BASE}/client/node_modules/.bin/vite 2>&1`);
     console.log('vite binary:', r);
 
-    // 2. Cek apakah node_modules frontend lengkap
-    console.log('\n=== 2. CEK NODE_MODULES FRONTEND ===');
-    r = await run(conn, `ls ${BASE}/frontend/node_modules/.bin/ | head -20 2>&1`);
+    // 2. Cek apakah node_modules client lengkap
+    console.log('\n=== 2. CEK NODE_MODULES CLIENT ===');
+    r = await run(conn, `ls ${BASE}/client/node_modules/.bin/ | head -20 2>&1`);
     console.log(r);
 
-    // 3. Build frontend lagi
-    console.log('\n=== 3. BUILD FRONTEND ===');
-    r = await run(conn, `cd ${BASE}/frontend && npx vite build 2>&1 | tail -20`);
+    // 3. Build client (frontend) lagi
+    console.log('\n=== 3. BUILD CLIENT ===');
+    r = await run(conn, `cd ${BASE}/client && npx vite build 2>&1 | tail -20`);
     console.log(r);
 
     // 4. Cek apakah build sukses
     console.log('\n=== 4. CEK BUILD ===');
-    r = await run(conn, `ls -la ${BASE}/frontend/dist/assets/ 2>&1`);
+    r = await run(conn, `ls -la ${BASE}/client/dist/assets/ 2>&1`);
     console.log(r);
 
     // 5. Cek log PM2 untuk error
@@ -51,7 +51,7 @@ async function main() {
 
     // 6. Restart PM2
     console.log('\n=== 6. RESTART PM2 ===');
-    r = await run(conn, `cd ${BASE}/backend && pm2 restart backend-sas 2>&1`);
+    r = await run(conn, `cd ${BASE} && pm2 restart backend-sas 2>&1`);
     console.log(r);
 
     // 7. Tunggu sebentar lalu cek

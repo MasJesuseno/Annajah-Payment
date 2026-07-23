@@ -1,8 +1,9 @@
 node_modules/
 .env
-backend/.env
-backend/temp_uploads/
-backend/backups/
+client/node_modules/
+client/dist/
+temp_uploads/
+backups/
 *.db
 *.sqlite
 *.log
@@ -10,4 +11,9 @@ token.txt
 nul
 analyze.js
 analyze2.js
-backups/
+
+# Large files
+sas_uploads.zip
+backup-annajah-full.sql
+*.py
+

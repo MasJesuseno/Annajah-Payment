@@ -36,7 +36,7 @@ conn.on('ready', async () => {
   const files = (await run('ls /var/www/db_sas_annajah/backend/uploads/kehadiran-guru/ 2>/dev/null')).trim().split('\n');
   for (const f of files) {
     if (f.trim()) {
-      const result = await run(`curl -s -D - "http://localhost:5000/uploads/kehadiran-guru/${f.trim()}" 2>/dev/null | head -20`);
+      const result = await run(`curl -s -D - "http://localhost:3001/uploads/kehadiran-guru/${f.trim()}" 2>/dev/null | head -20`);
       console.log(`\nFile: ${f.trim()}`);
       console.log(result.substring(0, 300));
     }

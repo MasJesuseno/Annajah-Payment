@@ -53,10 +53,10 @@ async function main() {
     r = await run(conn, "for f in $(mysql -u root -p'it92528!@' dbannajah -N -e \"SELECT foto_masuk FROM kehadiran_guru WHERE foto_masuk IS NOT NULL UNION SELECT foto_keluar FROM kehadiran_guru WHERE foto_keluar IS NOT NULL\" 2>/dev/null); do echo -n \"$f: \"; [ -f \"/var/www/db_sas_annajah/backend/uploads/kehadiran-guru/$f\" ] && echo \"OK\" || echo \"MISSING\"; done");
     console.log(r);
 
-    // 6. Cek apakah backend melayani file statis
-    console.log('\n=== CEK AKSES BACKEND ===');
-    r = await run(conn, 'curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:5000/uploads/guru/ 2>&1');
-    console.log('Backend /uploads/guru/:', r);
+    // 6. Cek apakah server melayani file statis
+    console.log('\n=== CEK AKSES SERVER ===');
+    r = await run(conn, 'curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3001/uploads/guru/ 2>&1');
+    console.log('Server /uploads/guru/:', r);
     
     conn.end();
     console.log('\n✅ SELESAI');

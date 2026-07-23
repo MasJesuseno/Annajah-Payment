@@ -32,27 +32,27 @@ async function main() {
     r = await run(conn, 'git --git-dir=/root/sas-annajah.git log --oneline -3 2>&1');
     console.log('Bare repo HEAD:', r);
 
-    // 2. Install dependencies backend
-    console.log('\n=== 2. INSTALL BACKEND DEPS ===');
-    r = await run(conn, `cd ${BASE}/backend && npm install --production 2>&1 | tail -5`);
+    // 2. Install dependencies server
+    console.log('\n=== 2. INSTALL SERVER DEPS ===');
+    r = await run(conn, `cd ${BASE} && npm install --production 2>&1 | tail -5`);
     console.log(r);
 
-    // 3. Install dependencies frontend & build
-    console.log('\n=== 3. BUILD FRONTEND ===');
-    r = await run(conn, `cd ${BASE}/frontend && npm install 2>&1 | tail -5`);
+    // 3. Install dependencies client & build
+    console.log('\n=== 3. BUILD CLIENT ===');
+    r = await run(conn, `cd ${BASE}/client && npm install 2>&1 | tail -5`);
     console.log(r);
     
-    r = await run(conn, `cd ${BASE}/frontend && npm run build 2>&1 | tail -20`);
+    r = await run(conn, `cd ${BASE}/client && npm run build 2>&1 | tail -20`);
     console.log(r);
 
     // 4. Cek hasil build
     console.log('\n=== 4. CEK HASIL BUILD ===');
-    r = await run(conn, `ls -la ${BASE}/frontend/dist/assets/ 2>&1`);
+    r = await run(conn, `ls -la ${BASE}/client/dist/assets/ 2>&1`);
     console.log(r);
 
     // 5. Restart PM2
     console.log('\n=== 5. RESTART PM2 ===');
-    r = await run(conn, `cd ${BASE}/backend && pm2 restart backend-sas 2>&1`);
+    r = await run(conn, `cd ${BASE} && pm2 restart backend-sas 2>&1`);
     console.log(r);
 
     // 6. Cek status

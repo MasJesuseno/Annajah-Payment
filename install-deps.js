@@ -11,16 +11,17 @@ function run(cmd, cwd) {
   }
 }
 
-const backendDir = path.join(__dirname, 'backend');
-const frontendDir = path.join(__dirname, 'frontend');
+const rootDir = __dirname;
+const clientDir = path.join(rootDir, 'client');
 
-console.log('Installing backend dependencies...');
-run('npm.cmd install', backendDir);
+console.log('Installing server dependencies...');
+run('npm.cmd install', rootDir);
 
-console.log('\nInstalling frontend dependencies...');
-run('npm.cmd install', frontendDir);
+console.log('\nInstalling client (frontend) dependencies...');
+run('npm.cmd install', clientDir);
 
 console.log('\n=== All dependencies installed successfully! ===');
 console.log('\nTo run:');
-console.log('  Backend:  cd backend && npm.cmd start');
-console.log('  Frontend: cd frontend && npm.cmd run dev');
+console.log('  Production: npm.cmd start');
+console.log('  Client dev: cd client && npm.cmd run dev');
+console.log('  Both:       npm.cmd run dev:all');

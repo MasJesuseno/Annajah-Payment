@@ -25,19 +25,19 @@ async function main() {
 
     // Fix vite permission
     console.log('=== FIX VITE PERMISSION ===');
-    let r = await run(conn, `chmod 755 ${BASE}/frontend/node_modules/.bin/vite 2>&1`);
+    let r = await run(conn, `chmod 755 ${BASE}/client/node_modules/.bin/vite 2>&1`);
     console.log(r);
-    r = await run(conn, `ls -la ${BASE}/frontend/node_modules/.bin/vite 2>&1`);
+    r = await run(conn, `ls -la ${BASE}/client/node_modules/.bin/vite 2>&1`);
     console.log(r);
 
-    // Build frontend
-    console.log('\n=== BUILD FRONTEND ===');
-    r = await run(conn, `cd ${BASE}/frontend && npx vite build 2>&1 | tail -15`);
+    // Build client
+    console.log('\n=== BUILD CLIENT ===');
+    r = await run(conn, `cd ${BASE}/client && npx vite build 2>&1 | tail -15`);
     console.log(r);
 
     // Check result
     console.log('\n=== HASIL BUILD ===');
-    r = await run(conn, `ls -la ${BASE}/frontend/dist/assets/ 2>&1`);
+    r = await run(conn, `ls -la ${BASE}/client/dist/assets/ 2>&1`);
     console.log(r);
 
     conn.end();

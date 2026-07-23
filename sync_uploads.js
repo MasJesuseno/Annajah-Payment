@@ -13,8 +13,8 @@ const SftpClient = require('ssh2-sftp-client');
 const HOST = '192.168.1.51';
 const USER = 'root';
 const PASSWORD = 'it92528!@';
-const LOCAL_UPLOADS = path.join(__dirname, 'backend', 'uploads');
-const REMOTE_UPLOADS = '/var/www/db_sas_annajah/backend/uploads';
+const LOCAL_UPLOADS = path.join(__dirname, 'uploads');
+const REMOTE_UPLOADS = '/var/www/db_sas_annajah/uploads';
 
 async function ensureDir(sftp, remotePath) {
   try {

@@ -10,7 +10,7 @@
 | **Folder Server (Ubuntu)** | `/var/www/db_sas_annajah` |
 | **Domain** | `https://sas.smaannajah.sch.id` |
 | **IP Server** | `192.168.1.51` |
-| **Backend Port** | `5000` |
+| **Port Aplikasi** | `3000` |
 | **PM2 Process** | `backend-sas` |
 
 ---

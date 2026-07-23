@@ -32,7 +32,7 @@ cd backend
 npm install
 npm start
 ```
-Backend berjalan di `http://localhost:5000`
+Aplikasi berjalan di `http://localhost:3001`
 
 ### 3. Install Frontend
 ```bash
@@ -40,14 +40,14 @@ cd frontend
 npm install
 npm run dev
 ```
-Frontend berjalan di `http://localhost:3000`
+Frontend (dev) berjalan di `http://localhost:3001`
 
 ### 4. Build untuk production
 ```bash
 cd frontend
 npm run build
 ```
-Kemudian akses melalui backend di `http://localhost:5000`
+Kemudian akses aplikasi di `http://localhost:3001`
 
 ## Akun Demo
 
@@ -127,7 +127,7 @@ pm2 logs backend-sas        # Lihat log
 |------|---------|
 | **22** | SSH |
 | **80** | HTTP (Frontend) |
-| **5000** | Backend API (Express) |
+| **3000** | Aplikasi (Express + Frontend) |
 | **3306** | MySQL |
 
 #### Konfigurasi Database (.env)
@@ -165,6 +165,6 @@ mysql -h 192.168.1.51 -u root -p'$a$Login4dmin' dbannajah < backup_file.sql
 | **MySQL User** | `root` |
 | **MySQL Password** | (kosong) |
 | **Database** | `dbannajah` |
-| **Backend** | `http://localhost:5000` |
-| **Frontend** | `http://localhost:3000` |
-| **Frontend (build)** | `http://localhost:5000` |
+| **Aplikasi** | `http://localhost:3001` |
+| **Frontend** | `http://localhost:3001` (Vite dev) |
+| **Frontend (build)** | `http://localhost:3001` |

@@ -29,15 +29,15 @@ conn.on('ready', async () => {
   const fotoFiles = (await run('ls /var/www/db_sas_annajah/backend/uploads/kehadiran-guru/ 2>/dev/null')).trim().split('\n');
   for (const f of fotoFiles) {
     if (f.trim()) {
-      const code = await run(`curl -s -o /dev/null -w "%{http_code}" "http://localhost:5000/uploads/kehadiran-guru/${f.trim()}" 2>/dev/null`);
+      const code = await run(`curl -s -o /dev/null -w "%{http_code}" "http://localhost:3001/uploads/kehadiran-guru/${f.trim()}" 2>/dev/null`);
       console.log(`  /uploads/kehadiran-guru/${f.trim()} -> HTTP ${code}`);
     }
   }
 
-  // 5. Check how the frontend is served
-  console.log('\n=== FRONTEND DIST CHECK ===');
-  console.log(await run('ls -la /var/www/db_sas_annajah/frontend/dist/assets/ 2>/dev/null | head -10'));
-  console.log(await run('stat /var/www/db_sas_annajah/frontend/dist/index.html 2>/dev/null | grep Modify'));
+  // 5. Check how the client is served
+  console.log('\n=== CLIENT DIST CHECK ===');
+  console.log(await run('ls -la /var/www/db_sas_annajah/client/dist/assets/ 2>/dev/null | head -10'));
+  console.log(await run('stat /var/www/db_sas_annajah/client/dist/index.html 2>/dev/null | grep Modify'));
 
   conn.end();
 }).connect({

@@ -20,28 +20,28 @@ echo [OK] Node.js terdeteksi
 node -v
 echo.
 
-:: Install Backend
-echo [1/3] Menginstall dependensi Backend...
-cd /d "%~dp0backend"
+:: Install Server Dependencies
+echo [1/3] Menginstall dependensi Server...
+cd /d "%~dp0"
 call npm install
 if %ERRORLEVEL% NEQ 0 (
-    echo [ERROR] Gagal install backend dependencies!
+    echo [ERROR] Gagal install server dependencies!
     pause
     exit /b 1
 )
-echo [OK] Backend dependencies terinstall
+echo [OK] Server dependencies terinstall
 echo.
 
-:: Install Frontend
-echo [2/3] Menginstall dependensi Frontend...
-cd /d "%~dp0frontend"
+:: Install Client (Frontend)
+echo [2/3] Menginstall dependensi Client...
+cd /d "%~dp0client"
 call npm install
 if %ERRORLEVEL% NEQ 0 (
-    echo [ERROR] Gagal install frontend dependencies!
+    echo [ERROR] Gagal install client dependencies!
     pause
     exit /b 1
 )
-echo [OK] Frontend dependencies terinstall
+echo [OK] Client dependencies terinstall
 echo.
 
 :: Done
@@ -51,24 +51,24 @@ echo ============================================
 echo.
 echo Menjalankan aplikasi...
 echo.
-echo Backend  : http://localhost:5000
-echo Frontend : http://localhost:3000
+echo Aplikasi : http://localhost:3001
+echo Frontend : http://localhost:3001 (via Vite proxy)
 echo.
 echo Akun Demo:
 echo   Admin     : admin / admin123
 echo   Bendahara : bendahara / bendahara123
 echo.
 
-:: Start Backend (di window baru)
-start "SMA Annajah - Backend" cmd /k "cd /d "%~dp0backend" && node server.js"
+:: Start Server (di window baru)
+start "SMA Annajah - Server" cmd /k "cd /d "%~dp0" && node server.js"
 timeout /t 3 /nobreak >nul
 
-:: Start Frontend (di window baru)
-start "SMA Annajah - Frontend" cmd /k "cd /d "%~dp0frontend" && npm run dev"
+:: Start Client Dev Server (di window baru)
+start "SMA Annajah - Client" cmd /k "cd /d "%~dp0client" && npm run dev"
 
 echo.
 echo Backend dan Frontend sudah dijalankan!
-echo Buka http://localhost:3000 di browser Anda.
+echo Buka http://localhost:3001 di browser Anda.
 echo.
 echo (Tutup jendela CMD ini untuk keluar)
 echo.

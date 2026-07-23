@@ -28,15 +28,15 @@ do
         echo "=== Deploying to $TARGET ==="
         git --work-tree=$TARGET --git-dir=$GIT_DIR checkout -f $BRANCH
         echo "=== Code updated! ==="
-        echo "=== Installing backend dependencies ==="
-        cd $TARGET/backend
-        npm install --production 2>&1 || echo "npm install backend done"
-        echo "=== Building frontend ==="
-        cd $TARGET/frontend
-        npm install 2>&1 || echo "npm install frontend done"
+        echo "=== Installing server dependencies ==="
+        cd $TARGET
+        npm install --production 2>&1 || echo "npm install server done"
+        echo "=== Building client (frontend) ==="
+        cd $TARGET/client
+        npm install 2>&1 || echo "npm install client done"
         npm run build 2>&1 || echo "npm run build done"
         echo "=== Restarting PM2 ==="
-        cd $TARGET/backend
+        cd $TARGET
         pm2 restart backend-sas 2>&1 || echo "pm2 restart done"
         echo "=== Deploy completed! ==="
     fi

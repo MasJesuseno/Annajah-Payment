@@ -3,7 +3,7 @@ const path = require('path');
 const fs = require('fs');
 
 const REMOTE_APP = '/var/www/db_sas_annajah';
-const LOCAL_UPLOADS = path.join(process.cwd(), 'backend', 'uploads');
+const LOCAL_UPLOADS = path.join(process.cwd(), 'uploads');
 
 async function uploadDir(sftp, localDir, remoteDir) {
   const entries = fs.readdirSync(localDir, { withFileTypes: true });
@@ -112,8 +112,8 @@ async function main() {
       });
       
       console.log(await run(`echo "=== Uploads ===" && ls -R ${REMOTE_APP}/uploads/ 2>/dev/null | head -30`));
-      console.log(await run(`for f in ${REMOTE_APP}/uploads/kehadiran-guru/*.jpg 2>/dev/null; do echo "Testing \$(basename \$f)"; curl -s -o /dev/null -w "HTTP %{http_code}\n" "http://localhost:5000/uploads/kehadiran-guru/\$(basename \$f)"; done`));
-      console.log(await run(`for f in ${REMOTE_APP}/uploads/guru/*.jpg 2>/dev/null; do echo "Testing \$(basename \$f)"; curl -s -o /dev/null -w "HTTP %{http_code}\n" "http://localhost:5000/uploads/guru/\$(basename \$f)"; done`));
+      console.log(await run(`for f in ${REMOTE_APP}/uploads/kehadiran-guru/*.jpg 2>/dev/null; do echo "Testing \$(basename \$f)"; curl -s -o /dev/null -w "HTTP %{http_code}\n" "http://localhost:3001/uploads/kehadiran-guru/\$(basename \$f)"; done`));
+      console.log(await run(`for f in ${REMOTE_APP}/uploads/guru/*.jpg 2>/dev/null; do echo "Testing \$(basename \$f)"; curl -s -o /dev/null -w "HTTP %{http_code}\n" "http://localhost:3001/uploads/guru/\$(basename \$f)"; done`));
       
       conn2.end();
       resolve();

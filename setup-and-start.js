@@ -2,8 +2,7 @@ const { execSync, spawn } = require('child_process');
 const path = require('path');
 
 const rootDir = __dirname;
-const backendDir = path.join(rootDir, 'backend');
-const frontendDir = path.join(rootDir, 'frontend');
+const clientDir = path.join(rootDir, 'client');
 
 console.log('============================================');
 console.log('  SMA Annajah - Sistem Administrasi Sekolah');
@@ -20,17 +19,17 @@ function run(cmd, cwd) {
   }
 }
 
-// Install backend
-console.log('[1/2] Install Backend Dependencies...\n');
-if (!run('npm.cmd install', backendDir)) {
-  console.error('\nGagal install backend. Pastikan Node.js sudah terinstall.');
+// Install server
+console.log('[1/2] Install Server Dependencies...\n');
+if (!run('npm.cmd install', rootDir)) {
+  console.error('\nGagal install server. Pastikan Node.js sudah terinstall.');
   process.exit(1);
 }
 
-// Install frontend
-console.log('\n[2/2] Install Frontend Dependencies...\n');
-if (!run('npm.cmd install', frontendDir)) {
-  console.error('\nGagal install frontend. Pastikan Node.js sudah terinstall.');
+// Install client
+console.log('\n[2/2] Install Client (Frontend) Dependencies...\n');
+if (!run('npm.cmd install', clientDir)) {
+  console.error('\nGagal install client. Pastikan Node.js sudah terinstall.');
   process.exit(1);
 }
 
@@ -40,9 +39,9 @@ console.log('  Memulai Server...');
 console.log('============================================\n');
 
 // Start Backend
-console.log('  [Backend] Menjalankan di port 5000...\n');
+console.log('  [Server] Menjalankan di port 3000...\n');
 const backend = spawn('node', ['server.js'], {
-  cwd: backendDir,
+  cwd: rootDir,
   stdio: 'inherit',
   shell: true
 });
@@ -55,7 +54,7 @@ backend.on('error', (err) => {
 setTimeout(() => {
   console.log('\n  [Frontend] Menjalankan di port 3000...\n');
   const frontend = spawn('npm.cmd', ['run', 'dev'], {
-    cwd: frontendDir,
+    cwd: clientDir,
     stdio: 'inherit',
     shell: true
   });
@@ -72,7 +71,7 @@ setTimeout(() => {
   console.log('\n============================================');
   console.log('  ✅ APLIKASI SIAP!');
   console.log('============================================\n');
-  console.log('  Buka browser: http://localhost:3000\n');
+  console.log('  Buka browser: http://localhost:3001\n');
   console.log('  Akun Demo:');
   console.log('    Admin     : admin / admin123');
   console.log('    Bendahara : bendahara / bendahara123\n');

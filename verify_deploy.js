@@ -21,10 +21,10 @@ conn.on('ready', async () => {
     'echo "=== Guru photos ===" && ls -la /var/www/db_sas_annajah/uploads/guru/ 2>/dev/null || echo "DIR_NOT_FOUND"',
     'echo "=== Siswa photos ===" && ls -la /var/www/db_sas_annajah/uploads/siswa/ 2>/dev/null || echo "DIR_NOT_FOUND"',
     'echo "=== Check PM2 ===" && pm2 list 2>&1 | head -5',
-    'echo "=== Test backend HTTP ===" && curl -s -o /dev/null -w "HTTP %{http_code}\n" http://localhost:5000/',
+    'echo "=== Test server HTTP ===" && curl -s -o /dev/null -w "HTTP %{http_code}\n" http://localhost:3001/',
     'echo "=== Test specific photo ===" && ls /var/www/db_sas_annajah/uploads/kehadiran-guru/*.jpg 2>/dev/null | head -3',
-    'for f in /var/www/db_sas_annajah/uploads/kehadiran-guru/*.jpg 2>/dev/null; do echo "Testing $f"; curl -s -o /dev/null -w "HTTP %{http_code}\n" "http://localhost:5000/uploads/kehadiran-guru/$(basename $f)"; done',
-    'for f in /var/www/db_sas_annajah/uploads/guru/*.jpg 2>/dev/null; do echo "Testing $f"; curl -s -o /dev/null -w "HTTP %{http_code}\n" "http://localhost:5000/uploads/guru/$(basename $f)"; done',
+    'for f in /var/www/db_sas_annajah/uploads/kehadiran-guru/*.jpg 2>/dev/null; do echo "Testing $f"; curl -s -o /dev/null -w "HTTP %{http_code}\n" "http://localhost:3001/uploads/kehadiran-guru/$(basename $f)"; done',
+    'for f in /var/www/db_sas_annajah/uploads/guru/*.jpg 2>/dev/null; do echo "Testing $f"; curl -s -o /dev/null -w "HTTP %{http_code}\n" "http://localhost:3001/uploads/guru/$(basename $f)"; done',
   ];
   
   for (const cmd of cmds) {

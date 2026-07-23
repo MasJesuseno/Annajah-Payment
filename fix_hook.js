@@ -37,15 +37,15 @@ do
         echo "=== Code updated! ==="
         
         # Install dependencies dan build
-        cd $TARGET/backend
+        cd $TARGET
         npm install --production
         
-        cd $TARGET/frontend
+        cd $TARGET/client
         npm install
         npm run build
         
         # Restart backend
-        cd $TARGET/backend
+        cd $TARGET
         pm2 restart backend-sas
         
         echo "=== Deploy completed! ==="

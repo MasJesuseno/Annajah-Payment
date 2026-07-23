@@ -116,7 +116,7 @@ async function main() {
             
             // Verify
             console.log('\nVerifying...');
-            ssh.exec("curl -s http://localhost:5000/api/pengaturan-tv/display | python3 -c \"import sys,json; d=json.load(sys.stdin); print('Videos:', len(d.get('videos',[])), '| Agenda:', len(d.get('agenda',[])), '| Kata Bijak:', len(d.get('kataBijak',[])))\"", function(err, stream) {
+            ssh.exec("curl -s http://localhost:3001/api/pengaturan-tv/display | python3 -c \"import sys,json; d=json.load(sys.stdin); print('Videos:', len(d.get('videos',[])), '| Agenda:', len(d.get('agenda',[])), '| Kata Bijak:', len(d.get('kataBijak',[])))\"", function(err, stream) {
               var vout = '';
               stream.on('data', function(d) { vout += d.toString(); });
               stream.on('close', function() { console.log(vout); ssh.end(); console.log('\n=== ALL DONE ==='); });

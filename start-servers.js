@@ -3,8 +3,7 @@ const path = require('path');
 const http = require('http');
 
 const rootDir = __dirname;
-const backendDir = path.join(rootDir, 'backend');
-const frontendDir = path.join(rootDir, 'frontend');
+const clientDir = path.join(rootDir, 'client');
 
 console.log('============================================');
 console.log('  SMA Annajah - Sistem Administrasi Sekolah');
@@ -31,9 +30,9 @@ function waitForServer(url, label, timeout = 30000) {
 }
 
 // Start Backend
-console.log('[1] Menjalankan Backend (port 5000)...');
+console.log('[1] Menjalankan Server (port 3000)...');
 const backend = spawn('node', ['server.js'], {
-  cwd: backendDir,
+  cwd: rootDir,
   stdio: 'pipe',
   shell: true
 });
@@ -53,7 +52,7 @@ backend.on('close', (code) => {
 // Start Frontend
 console.log('[2] Menjalankan Frontend (port 3000)...');
 const frontend = spawn('npm.cmd', ['run', 'dev'], {
-  cwd: frontendDir,
+  cwd: clientDir,
   stdio: 'pipe',
   shell: true
 });
@@ -69,7 +68,7 @@ frontend.stdout.on('data', (data) => {
     console.log('============================================');
     console.log('');
     console.log('  Buka browser Anda:');
-    console.log('  http://localhost:3000');
+    console.log('  http://localhost:3001');
     console.log('');
     console.log('  Akun Demo:');
     console.log('  Admin     : admin / admin123');
