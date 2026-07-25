@@ -308,6 +308,7 @@ router.post('/import', (req, res, next) => {
     const insertErrors = [];
 
     for (const data of success) {
+      let conn;
       try {
         // Cek duplikat username
         const [existingUser] = await db.execute('SELECT id FROM users WHERE username = ?', [data.username]);
@@ -325,16 +326,18 @@ router.post('/import', (req, res, next) => {
           }
         }
 
-        // Buat user account
+        // Buat user account + guru record dalam satu transaksi
+        conn = await db.getConnection();
+        await conn.beginTransaction();
+
         const hashedPassword = bcrypt.hashSync(data.password, 10);
-        const [userResult] = await db.execute(
+        const [userResult] = await conn.execute(
           'INSERT INTO users (username, password, nama, role) VALUES (?, ?, ?, ?)',
           [data.username, hashedPassword, data.nama, 'guru']
         );
         const id_user = userResult.insertId;
 
-        // Buat guru record
-        await db.execute(`
+        await conn.execute(`
           INSERT INTO guru (nik, nuptk, nama, jenis_kelamin, tempat_lahir, tanggal_lahir, alamat, no_telp, id_user, jenis_karyawan)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `, [
@@ -350,9 +353,15 @@ router.post('/import', (req, res, next) => {
           data.jenis_karyawan || 'Guru',
         ]);
 
+        await conn.commit();
         insertSuccess.push(data.nama);
       } catch (err) {
+        if (conn) {
+          try { await conn.rollback(); } catch (rbError) {}
+        }
         insertErrors.push({ row: '-', nis: data.nik || '-', nama: data.nama, errors: [err.message] });
+      } finally {
+        if (conn) conn.release();
       }
     }
 
@@ -623,33 +632,45 @@ router.post('/', async (req, res) => {
       }
     }
 
-    // Create user account
-    const hashedPassword = bcrypt.hashSync(password, 10);
-    const [userResult] = await db.execute(
-      'INSERT INTO users (username, password, nama, role) VALUES (?, ?, ?, ?)',
-      [username, hashedPassword, nama, 'guru']
-    );
-    const id_user = userResult.insertId;
+    // Create user account + guru record dalam satu transaksi
+    const conn = await db.getConnection();
+    let newGuruId;
+    try {
+      await conn.beginTransaction();
 
-    // Create guru record
-    const { nuptk } = req.body;
-    const [guruResult] = await db.execute(`
-      INSERT INTO guru (nik, nuptk, nama, jenis_kelamin, tempat_lahir, tanggal_lahir, alamat, no_telp, id_user, jenis_karyawan)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `, [
-      nik || null,
-      nuptk || null,
-      nama,
-      jenis_kelamin || null,
-      tempat_lahir || null,
-      sanitizeDate(tanggal_lahir),
-      alamat || null,
-      no_telp || null,
-      id_user,
-      jenis_karyawan || 'Guru',
-    ]);
+      const hashedPassword = bcrypt.hashSync(password, 10);
+      const [userResult] = await conn.execute(
+        'INSERT INTO users (username, password, nama, role) VALUES (?, ?, ?, ?)',
+        [username, hashedPassword, nama, 'guru']
+      );
+      const id_user = userResult.insertId;
 
-    const newGuruId = guruResult.insertId;
+      const { nuptk } = req.body;
+      const [guruResult] = await conn.execute(`
+        INSERT INTO guru (nik, nuptk, nama, jenis_kelamin, tempat_lahir, tanggal_lahir, alamat, no_telp, id_user, jenis_karyawan)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `, [
+        nik || null,
+        nuptk || null,
+        nama,
+        jenis_kelamin || null,
+        tempat_lahir || null,
+        sanitizeDate(tanggal_lahir),
+        alamat || null,
+        no_telp || null,
+        id_user,
+        jenis_karyawan || 'Guru',
+      ]);
+
+      newGuruId = guruResult.insertId;
+
+      await conn.commit();
+    } catch (txError) {
+      try { await conn.rollback(); } catch (rbError) { /* abaikan error rollback */ }
+      throw txError;
+    } finally {
+      conn.release();
+    }
 
     // ── Set wali kelas jika dipilih ──
     if (Array.isArray(kelas_wali_ids) && kelas_wali_ids.length > 0) {
