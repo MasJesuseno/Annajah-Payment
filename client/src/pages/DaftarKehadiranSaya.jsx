@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
-import { Clock, MapPin, Search, RefreshCw, ChevronLeft, ChevronRight, Calendar, CheckCircle, XCircle, FileDown, Camera, CameraOff, LogIn, LogOut } from 'lucide-react'
+import { Clock, MapPin, Search, RefreshCw, ChevronLeft, ChevronRight, Calendar, CheckCircle, XCircle, FileDown } from 'lucide-react'
 import { getKehadiranGuruSaya, downloadExcelKehadiranGuru } from '../api'
 import { parseGpsData } from '../utils/formatGps'
+import VerifikasiWajah from '../components/VerifikasiWajah'
 
 function formatTanggal(tgl) {
   if (!tgl) return '-'
@@ -175,7 +176,7 @@ export default function DaftarKehadiranSaya() {
           <div className="col-span-2">Jam Keluar</div>
           <div className="col-span-2">Status</div>
           <div className="col-span-3">Lokasi GPS</div>
-          <div className="col-span-1">Foto</div>
+          <div className="col-span-1">Verifikasi</div>
         </div>
 
         {loading ? (
@@ -261,29 +262,32 @@ export default function DaftarKehadiranSaya() {
                       })()}
                     </div>
                   </div>
-                  {/* Foto */}
+                  {/* Verifikasi wajah — foto absen tidak disimpan lagi */}
                   <div className="col-span-6 sm:col-span-1 text-right sm:text-left">
-                    <div className="flex items-center gap-1.5">
-                      {item.foto_masuk ? (
-                        <img
-                          src={`/uploads/kehadiran-guru/${item.foto_masuk}`}
-                          alt="Foto"
-                          className="w-7 h-7 rounded-lg object-cover border border-green-200 cursor-pointer"
-                          onClick={() => window.open(`/uploads/kehadiran-guru/${item.foto_masuk}`, '_blank')}
-                          title="Foto Masuk"
-                        />
-                      ) : null}
-                      {item.foto_keluar ? (
-                        <img
-                          src={`/uploads/kehadiran-guru/${item.foto_keluar}`}
-                          alt="Foto"
-                          className="w-7 h-7 rounded-lg object-cover border border-amber-200 cursor-pointer"
-                          onClick={() => window.open(`/uploads/kehadiran-guru/${item.foto_keluar}`, '_blank')}
-                          title="Foto Keluar"
-                        />
-                      ) : null}
-                      {!item.foto_masuk && !item.foto_keluar && (
-                        <CameraOff className="w-3.5 h-3.5 text-gray-300" />
+                    <div className="flex flex-col items-end sm:items-start gap-0.5">
+                      <VerifikasiWajah skorMasuk={item.skor_wajah_masuk} skorKeluar={item.skor_wajah_keluar} />
+                      {/* Foto absen lama (data sebelum verifikasi wajah) */}
+                      {(item.foto_masuk || item.foto_keluar) && (
+                        <div className="flex items-center gap-1.5">
+                          {item.foto_masuk ? (
+                            <img
+                              src={`/uploads/kehadiran-guru/${item.foto_masuk}`}
+                              alt="Foto"
+                              className="w-7 h-7 rounded-lg object-cover border border-green-200 cursor-pointer"
+                              onClick={() => window.open(`/uploads/kehadiran-guru/${item.foto_masuk}`, '_blank')}
+                              title="Foto Masuk (data lama)"
+                            />
+                          ) : null}
+                          {item.foto_keluar ? (
+                            <img
+                              src={`/uploads/kehadiran-guru/${item.foto_keluar}`}
+                              alt="Foto"
+                              className="w-7 h-7 rounded-lg object-cover border border-amber-200 cursor-pointer"
+                              onClick={() => window.open(`/uploads/kehadiran-guru/${item.foto_keluar}`, '_blank')}
+                              title="Foto Keluar (data lama)"
+                            />
+                          ) : null}
+                        </div>
                       )}
                     </div>
                   </div>

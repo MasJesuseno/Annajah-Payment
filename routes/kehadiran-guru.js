@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const path = require('path');
-const fs = require('fs');
 const multer = require('multer');
 const { getDatabase } = require('../database');
 const { authenticateToken } = require('../middleware/auth');
@@ -11,22 +10,13 @@ const { logActivity } = require('../helpers/activityLogHelper');
 
 router.use(authenticateToken);
 
-// ─── Konfigurasi Multer untuk Upload Foto Absen ───
-const fotoDir = path.join(__dirname, '..', 'uploads', 'kehadiran-guru');
-if (!fs.existsSync(fotoDir)) {
-  fs.mkdirSync(fotoDir, { recursive: true });
-}
-
-const fotoStorage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, fotoDir),
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase();
-    cb(null, `absen_${Date.now()}_${Math.random().toString(36).substring(2, 8)}${ext}`);
-  },
-});
-
+// ─── Konfigurasi Multer untuk Absen ───
+// Foto absen TIDAK disimpan: kehadiran diverifikasi lewat face recognition,
+// sehingga hanya skor kemiripan (skor_wajah_masuk/keluar) yang dicatat.
+// Multer memakai memory storage agar tidak ada file tertulis ke disk;
+// middleware tetap ada untuk kompatibilitas klien yang mengirim multipart.
 const uploadFoto = multer({
-  storage: fotoStorage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 2 * 1024 * 1024 }, // 2MB max
   fileFilter: (req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase();
@@ -36,6 +26,26 @@ const uploadFoto = multer({
     cb(null, true);
   },
 });
+
+// ─── Verifikasi Wajah ───
+// Jarak maksimum antar face descriptor agar wajah dianggap orang yang sama.
+// Nilai ini sama dengan MATCH_THRESHOLD di client/src/utils/faceMatch.js.
+const MAX_WAJAH_DISTANCE = 0.6;
+
+// Ubah jarak (skor) verifikasi wajah menjadi persentase kemiripan untuk laporan
+function skorWajahKePersen(skor) {
+  if (skor === null || skor === undefined || skor === '') return null;
+  const num = Number(skor);
+  if (!Number.isFinite(num)) return null;
+  return Math.round(Math.max(0, Math.min(100, (1 - num) * 100)));
+}
+
+// Validasi skor (jarak) verifikasi wajah dari aplikasi mobile
+function parseSkorWajah(value) {
+  const skor = parseFloat(value);
+  if (!Number.isFinite(skor) || skor < 0 || skor > MAX_WAJAH_DISTANCE) return null;
+  return skor;
+}
 
 // Helper: get current date and time in WIB (Asia/Jakarta timezone)
 // Server is in Singapore (UTC+8), users are in Indonesia (WIB/UTC+7)
@@ -205,7 +215,7 @@ router.get('/status-hari-ini', async (req, res) => {
     const today = getWIBDateStr();
 
     const [rows] = await db.execute(
-      'SELECT id, jam_masuk, jam_keluar, gps_masuk, gps_keluar, foto_masuk, foto_keluar FROM kehadiran_guru WHERE id_guru = ? AND tanggal = ?',
+      'SELECT id, jam_masuk, jam_keluar, gps_masuk, gps_keluar, foto_masuk, foto_keluar, skor_wajah_masuk, skor_wajah_keluar FROM kehadiran_guru WHERE id_guru = ? AND tanggal = ?',
       [idGuru, today]
     );
 
@@ -238,6 +248,8 @@ router.get('/status-hari-ini', async (req, res) => {
           gps_keluar: parseGps(rows[0].gps_keluar),
           foto_masuk: rows[0].foto_masuk,
           foto_keluar: rows[0].foto_keluar,
+          skor_wajah_masuk: rows[0].skor_wajah_masuk,
+          skor_wajah_keluar: rows[0].skor_wajah_keluar,
         }
       });
     } else {
@@ -248,9 +260,10 @@ router.get('/status-hari-ini', async (req, res) => {
   }
 });
 
-// POST /api/kehadiran-guru/absen-masuk — clock in with GPS & foto
+// POST /api/kehadiran-guru/absen-masuk — absen masuk dengan GPS & verifikasi wajah
+// (foto tidak disimpan; hanya skor kemiripan wajah yang dicatat)
 router.post('/absen-masuk', (req, res, next) => {
-  // Handle both JSON (base64 foto) and multipart (file upload)
+  // Terima JSON maupun multipart (foto hanya dipakai untuk verifikasi di aplikasi)
   if (req.headers['content-type'] && req.headers['content-type'].includes('multipart')) {
     uploadFoto.single('foto_masuk')(req, res, (err) => {
       if (err) {
@@ -273,7 +286,7 @@ router.post('/absen-masuk', (req, res, next) => {
       return res.status(400).json({ message: 'Akun guru tidak ditemukan' });
     }
 
-    const { gps_masuk, foto_masuk: fotoBase64 } = req.body;
+    const { gps_masuk, skor_wajah_masuk } = req.body;
     const today = getWIBDateStr();
     const jamMasuk = getWIBTimeStr();
 
@@ -287,30 +300,32 @@ router.post('/absen-masuk', (req, res, next) => {
       return res.status(400).json({ message: 'Anda sudah melakukan absen masuk hari ini' });
     }
 
+    // Foto identitas (foto profil) wajib ada — dipakai sebagai acuan verifikasi wajah
+    const [guruRows] = await db.execute('SELECT foto FROM guru WHERE id = ?', [idGuru]);
+    if (!guruRows[0]?.foto) {
+      return res.status(400).json({
+        message: 'Foto identitas belum diatur. Ambil foto dari kamera di menu Profil Saya terlebih dahulu.',
+      });
+    }
+
+    // Wajah saat absen harus cocok dengan foto identitas (dicek di aplikasi,
+    // skornya divalidasi ulang di sini). Foto absen tidak disimpan.
+    const skorWajah = parseSkorWajah(skor_wajah_masuk);
+    if (skorWajah === null) {
+      return res.status(400).json({
+        message: 'Verifikasi wajah gagal. Wajah Anda tidak cocok dengan foto identitas. Silakan ambil ulang foto.',
+      });
+    }
+
     // Enrich GPS dengan informasi wilayah (kelurahan, kecamatan, kabupaten, provinsi)
     let gps = gps_masuk || null;
     if (gps && typeof gps === 'object') {
       gps = await enrichGps(gps);
     }
 
-    // Handle foto dari multipart upload (file) atau base64 JSON
-    let fotoFilename = null;
-    if (req.file) {
-      fotoFilename = req.file.filename;
-    } else if (fotoBase64 && typeof fotoBase64 === 'string' && fotoBase64.startsWith('data:image')) {
-      // Simpan base64 sebagai file
-      const matches = fotoBase64.match(/^data:image\/([a-zA-Z]+);base64,(.+)$/);
-      if (matches) {
-        const ext = matches[1] === 'jpeg' ? 'jpg' : matches[1];
-        fotoFilename = `absen_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${ext}`;
-        const buffer = Buffer.from(matches[2], 'base64');
-        fs.writeFileSync(path.join(fotoDir, fotoFilename), buffer);
-      }
-    }
-
     const [result] = await db.execute(
-      'INSERT INTO kehadiran_guru (id_guru, tanggal, jam_masuk, gps_masuk, foto_masuk) VALUES (?, ?, ?, ?, ?)',
-      [idGuru, today, jamMasuk, gps, fotoFilename]
+      'INSERT INTO kehadiran_guru (id_guru, tanggal, jam_masuk, gps_masuk, skor_wajah_masuk) VALUES (?, ?, ?, ?, ?)',
+      [idGuru, today, jamMasuk, gps, skorWajah]
     );
 
     // Parse GPS for response
@@ -322,16 +337,16 @@ router.post('/absen-masuk', (req, res, next) => {
       }
     } catch {}
 
-    await logActivity(req, 'Tambah', 'Kehadiran Guru', result.insertId, 'Absen masuk guru');
+    await logActivity(req, 'Tambah', 'Kehadiran Guru', result.insertId, `Absen masuk guru (verifikasi wajah ${skorWajah})`);
     res.status(201).json({
       id: result.insertId,
-      message: 'Absen masuk berhasil',
+      message: 'Absen masuk berhasil. Wajah terverifikasi dengan foto identitas.',
       data: {
         id: result.insertId,
         tanggal: today,
         jam_masuk: jamMasuk.slice(0, 5),
         gps_masuk: gpsDisplay,
-        foto_masuk: fotoFilename,
+        skor_wajah_masuk: skorWajah,
       }
     });
   } catch (error) {
@@ -339,7 +354,8 @@ router.post('/absen-masuk', (req, res, next) => {
   }
 });
 
-// PUT /api/kehadiran-guru/absen-keluar/:id — clock out with GPS & foto
+// PUT /api/kehadiran-guru/absen-keluar/:id — absen keluar dengan GPS & verifikasi wajah
+// (foto tidak disimpan; hanya skor kemiripan wajah yang dicatat)
 router.put('/absen-keluar/:id', (req, res, next) => {
   if (req.headers['content-type'] && req.headers['content-type'].includes('multipart')) {
     uploadFoto.single('foto_keluar')(req, res, (err) => {
@@ -363,7 +379,7 @@ router.put('/absen-keluar/:id', (req, res, next) => {
       return res.status(400).json({ message: 'Akun guru tidak ditemukan' });
     }
 
-    const { gps_keluar, foto_keluar: fotoBase64 } = req.body;
+    const { gps_keluar, skor_wajah_keluar } = req.body;
 
     // Validasi kepemilikan
     const [existing] = await db.execute(
@@ -379,6 +395,23 @@ router.put('/absen-keluar/:id', (req, res, next) => {
       return res.status(400).json({ message: 'Anda sudah melakukan absen keluar hari ini' });
     }
 
+    // Foto identitas (foto profil) wajib ada — dipakai sebagai acuan verifikasi wajah
+    const [guruRows] = await db.execute('SELECT foto FROM guru WHERE id = ?', [idGuru]);
+    if (!guruRows[0]?.foto) {
+      return res.status(400).json({
+        message: 'Foto identitas belum diatur. Ambil foto dari kamera di menu Profil Saya terlebih dahulu.',
+      });
+    }
+
+    // Wajah saat absen harus cocok dengan foto identitas (dicek di aplikasi,
+    // skornya divalidasi ulang di sini). Foto absen tidak disimpan.
+    const skorWajah = parseSkorWajah(skor_wajah_keluar);
+    if (skorWajah === null) {
+      return res.status(400).json({
+        message: 'Verifikasi wajah gagal. Wajah Anda tidak cocok dengan foto identitas. Silakan ambil ulang foto.',
+      });
+    }
+
     const jamKeluar = getWIBTimeStr();
 
     let gps = gps_keluar || null;
@@ -386,23 +419,9 @@ router.put('/absen-keluar/:id', (req, res, next) => {
       gps = await enrichGps(gps);
     }
 
-    // Handle foto dari multipart upload (file) atau base64 JSON
-    let fotoFilename = null;
-    if (req.file) {
-      fotoFilename = req.file.filename;
-    } else if (fotoBase64 && typeof fotoBase64 === 'string' && fotoBase64.startsWith('data:image')) {
-      const matches = fotoBase64.match(/^data:image\/([a-zA-Z]+);base64,(.+)$/);
-      if (matches) {
-        const ext = matches[1] === 'jpeg' ? 'jpg' : matches[1];
-        fotoFilename = `absen_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${ext}`;
-        const buffer = Buffer.from(matches[2], 'base64');
-        fs.writeFileSync(path.join(fotoDir, fotoFilename), buffer);
-      }
-    }
-
     await db.execute(
-      'UPDATE kehadiran_guru SET jam_keluar = ?, gps_keluar = ?, foto_keluar = ? WHERE id = ?',
-      [jamKeluar, gps, fotoFilename, req.params.id]
+      'UPDATE kehadiran_guru SET jam_keluar = ?, gps_keluar = ?, skor_wajah_keluar = ? WHERE id = ?',
+      [jamKeluar, gps, skorWajah, req.params.id]
     );
 
     // Parse GPS for response
@@ -414,14 +433,14 @@ router.put('/absen-keluar/:id', (req, res, next) => {
       }
     } catch {}
 
-    await logActivity(req, 'Ubah', 'Kehadiran Guru', req.params.id, 'Absen keluar guru');
+    await logActivity(req, 'Ubah', 'Kehadiran Guru', req.params.id, `Absen keluar guru (verifikasi wajah ${skorWajah})`);
     res.json({
-      message: 'Absen keluar berhasil',
+      message: 'Absen keluar berhasil. Wajah terverifikasi dengan foto identitas.',
       data: {
         id: parseInt(req.params.id),
         jam_keluar: jamKeluar.slice(0, 5),
         gps_keluar: gpsDisplay,
-        foto_keluar: fotoFilename,
+        skor_wajah_keluar: skorWajah,
       }
     });
   } catch (error) {
@@ -707,7 +726,10 @@ router.get('/export-excel', async (req, res) => {
     const workbook = new ExcelJS.Workbook();
     const sheet = workbook.addWorksheet('Kehadiran Guru');
 
-    const headers = ['No', 'Nama Guru', 'NIK', 'Tanggal', 'Jam Masuk', 'Jam Keluar', 'Status', 'GPS Masuk', 'GPS Keluar'];
+    const headers = [
+      'No', 'Nama Guru', 'NIK', 'Tanggal', 'Jam Masuk', 'Jam Keluar', 'Status',
+      'Verifikasi Wajah Masuk (%)', 'Verifikasi Wajah Keluar (%)', 'GPS Masuk', 'GPS Keluar',
+    ];
     sheet.columns = headers.map((h) => ({
       header: h,
       key: h.toLowerCase().replace(/\s+/g, '_'),
@@ -755,6 +777,8 @@ router.get('/export-excel', async (req, res) => {
         row.jam_masuk ? row.jam_masuk.slice(0, 5) : '-',
         row.jam_keluar ? row.jam_keluar.slice(0, 5) : '-',
         status,
+        skorWajahKePersen(row.skor_wajah_masuk) ?? '-',
+        skorWajahKePersen(row.skor_wajah_keluar) ?? '-',
         formatGpsCell(row.gps_masuk),
         formatGpsCell(row.gps_keluar),
       ]);
@@ -764,7 +788,8 @@ router.get('/export-excel', async (req, res) => {
           top: { style: 'thin' }, left: { style: 'thin' },
           bottom: { style: 'thin' }, right: { style: 'thin' },
         };
-        cell.alignment = { vertical: 'middle', horizontal: colIdx === 0 ? 'center' : 'left' };
+        const centerCols = [0, 7, 8];
+        cell.alignment = { vertical: 'middle', horizontal: centerCols.includes(colIdx) ? 'center' : 'left' };
         if (idx % 2 === 1) {
           cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF0FDF4' } };
         }
@@ -808,7 +833,9 @@ router.get('/rekap-bulanan', async (req, res) => {
         k.jam_masuk,
         k.jam_keluar,
         k.gps_masuk,
-        k.gps_keluar
+        k.gps_keluar,
+        k.skor_wajah_masuk,
+        k.skor_wajah_keluar
       FROM kehadiran_guru k
       JOIN guru g ON g.id = k.id_guru
       WHERE YEAR(k.tanggal) = ? AND MONTH(k.tanggal) = ?
@@ -849,6 +876,8 @@ router.get('/rekap-bulanan', async (req, res) => {
         jam_keluar: row.jam_keluar ? row.jam_keluar.slice(0, 5) : null,
         gps_masuk: row.gps_masuk,
         gps_keluar: row.gps_keluar,
+        skor_wajah_masuk: row.skor_wajah_masuk,
+        skor_wajah_keluar: row.skor_wajah_keluar,
         status,
       });
     });

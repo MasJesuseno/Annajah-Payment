@@ -6,16 +6,20 @@ import {
   User, Phone, MapPin, Calendar, BookOpen, Hash,
   School, Loader2, Camera, ZoomIn, Crop, X, GraduationCap,
   Users, Key, Lock, CheckCircle, Eye, EyeOff, ArrowLeft, Pencil, Plus,
-  GraduationCap as Diploma, Save, Edit2, Trash2
+  GraduationCap as Diploma, Save, Edit2, Trash2, ShieldCheck, Upload, AlertTriangle
 } from 'lucide-react'
 import Cropper from 'react-easy-crop'
 import { getCroppedImg, blobToFile } from '../utils/cropImage'
+import CameraCapture from '../components/CameraCapture'
+import { getFaceDescriptor, loadImage } from '../utils/faceMatch'
 import toast from 'react-hot-toast'
 
 export default function ProfilSaya() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const guruId = user?.guru_id
+  // Panel /Internal (mobile karyawan) memakai halaman yang sama — jaga navigasi tetap di panel
+  const isInternalPanel = window.location.pathname.startsWith('/internal')
 
   const [guru, setGuru] = useState(null)
   const [kelasWali, setKelasWali] = useState([])
@@ -43,6 +47,7 @@ export default function ProfilSaya() {
   const [uploadingFoto, setUploadingFoto] = useState(false)
   const [fotoPreview, setFotoPreview] = useState(null)
   const [fotoError, setFotoError] = useState(false)
+  const [showCamera, setShowCamera] = useState(false)
   const fotoInputRef = useRef(null)
 
   // ─── Edit Profil State ───
@@ -135,6 +140,40 @@ export default function ProfilSaya() {
     reader.readAsDataURL(file)
   }
 
+  // Foto dari kamera langsung dibawa ke modal crop (hasil akhir jadi foto identitas)
+  const handleCameraCapture = (fotoBase64) => {
+    setShowCamera(false)
+    if (!fotoBase64) return
+    setCropImageSrc(fotoBase64)
+    setCrop({ x: 0, y: 0 })
+    setZoom(1)
+    setCroppedAreaPixels(null)
+    setShowCropModal(true)
+  }
+
+  /**
+   * Foto profil dipakai sebagai foto identitas verifikasi wajah saat absen,
+   * jadi wajah pada foto wajib terbaca model pengenalan wajah.
+   * Bila model tidak dapat dimuat (mis. offline), upload tetap diizinkan.
+   */
+  const ensureWajahTerbaca = async (blob) => {
+    const objectUrl = URL.createObjectURL(blob)
+    try {
+      const img = await loadImage(objectUrl)
+      const descriptor = await getFaceDescriptor(img)
+      if (!descriptor) {
+        toast.error('Wajah tidak terdeteksi pada foto. Gunakan foto wajah yang jelas untuk identitas absen.')
+        return false
+      }
+      return true
+    } catch (err) {
+      console.warn('Verifikasi wajah dilewati:', err)
+      return true
+    } finally {
+      URL.revokeObjectURL(objectUrl)
+    }
+  }
+
   const handleCropCancel = () => {
     setShowCropModal(false)
     setCropImageSrc(null)
@@ -149,20 +188,29 @@ export default function ProfilSaya() {
     }
     try {
       const blob = await getCroppedImg(cropImageSrc, croppedAreaPixels, 400)
-      const croppedFile = blobToFile(blob, 'foto_guru.jpg')
+      const croppedFile = blobToFile(blob, 'foto_identitas.jpg')
       if (croppedFile.size > 2 * 1024 * 1024) {
         toast.error('Hasil crop terlalu besar. Silakan crop area yang lebih kecil.')
         return
       }
+
+      setUploadingFoto(true)
+
+      // Wajah pada foto identitas harus terbaca agar absen bisa diverifikasi
+      const wajahTerbaca = await ensureWajahTerbaca(blob)
+      if (!wajahTerbaca) {
+        setUploadingFoto(false)
+        return
+      }
+
       if (fotoPreview?.startsWith('blob:')) URL.revokeObjectURL(fotoPreview)
       setFotoPreview(URL.createObjectURL(blob))
       setShowCropModal(false)
       setCropImageSrc(null)
 
-      setUploadingFoto(true)
       try {
         await uploadFotoGuru(guruId, croppedFile)
-        toast.success('Foto berhasil diupload')
+        toast.success('Foto identitas berhasil disimpan')
         loadData()
       } catch (err) {
         toast.error('Gagal mengupload foto')
@@ -353,17 +401,78 @@ export default function ProfilSaya() {
     return colors[jenjang] || 'bg-gray-100 text-gray-700 border-gray-200'
   }
 
+  // Info profil (nama + identitas) — dipakai layout admin & panel mobile
+  const infoProfil = (
+    <div className={`text-white pb-1 min-w-0 flex-1 ${isInternalPanel ? 'text-left' : 'text-center sm:text-left'}`}>
+      <h1 className="text-2xl sm:text-3xl font-bold mb-1">{guru.nama}</h1>
+      <div className={`flex flex-wrap items-center gap-x-4 gap-y-1 text-white/80 text-sm ${isInternalPanel ? 'justify-start' : 'justify-center sm:justify-start'}`}>
+        {guru.nik && (
+          <span className="flex items-center gap-1.5">
+            <Hash className="w-3.5 h-3.5" /> NIK: {guru.nik}
+          </span>
+        )}
+        {guru.jenis_kelamin && (
+          <span className="flex items-center gap-1.5">
+            <User className="w-3.5 h-3.5" />
+            {guru.jenis_kelamin === 'L' ? 'Laki-laki' : 'Perempuan'}
+          </span>
+        )}
+        <span className="flex items-center gap-1.5">
+          <User className="w-3.5 h-3.5" /> @{guru.username || user.username}
+        </span>
+      </div>
+    </div>
+  )
+
+  // Badge peran
+  const badgeKaryawan = (
+    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border backdrop-blur-sm bg-white/20 text-white border-white/30">
+      <GraduationCap className="w-3.5 h-3.5" />
+      Karyawan
+    </span>
+  )
+
+  // Tombol aksi foto identitas (kamera & upload)
+  const tombolFoto = (
+    <div className="flex flex-wrap gap-2 sm:justify-end">
+      <button
+        type="button"
+        onClick={() => setShowCamera(true)}
+        disabled={uploadingFoto}
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white text-annajah-700 hover:bg-annajah-50 shadow-sm transition-all disabled:opacity-60"
+      >
+        <Camera className="w-3.5 h-3.5" /> Ambil Foto dari Kamera
+      </button>
+      <button
+        type="button"
+        onClick={() => fotoInputRef.current?.click()}
+        disabled={uploadingFoto}
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white/20 text-white border border-white/30 hover:bg-white/30 transition-all disabled:opacity-60"
+      >
+        <Upload className="w-3.5 h-3.5" /> Upload
+      </button>
+    </div>
+  )
+
+  // Badge + tombol — layout admin / dashboard guru
+  const aksiFotoProfil = (
+    <>
+      {badgeKaryawan}
+      {tombolFoto}
+    </>
+  )
+
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">          <button
-          onClick={() => navigate('/guru-dashboard')}
+          onClick={() => navigate(isInternalPanel ? '/internal' : '/guru-dashboard')}
           className="flex items-center gap-2 text-gray-500 hover:text-gray-800 transition-colors group"
         >
           <div className="p-1.5 rounded-lg bg-white border border-gray-200 shadow-sm group-hover:shadow transition-all">
             <ArrowLeft className="w-4 h-4" />
           </div>
-          <span className="text-sm font-medium">Kembali ke Dashboard</span>
+          <span className="text-sm font-medium">{isInternalPanel ? 'Kembali ke Menu' : 'Kembali ke Dashboard'}</span>
         </button>
         <button
           onClick={() => {
@@ -394,10 +503,12 @@ export default function ProfilSaya() {
       {/* Profile Card */}
       <div className="card overflow-hidden">
         <div className="bg-gradient-to-r from-annajah-600 to-annajah-800 px-6 py-8 sm:px-8">
-          <div className="flex flex-col sm:flex-row items-center sm:items-end gap-5">
+          <div className={isInternalPanel
+            ? 'flex flex-wrap items-start gap-4'
+            : 'flex flex-col sm:flex-row items-center sm:items-end gap-5'}>
             {/* Foto */}
             <div
-              className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-2xl overflow-hidden border-4 border-white/30 shadow-xl flex-shrink-0 -mb-16 sm:-mb-20 bg-white group cursor-pointer"
+              className={`relative w-28 h-28 sm:w-32 sm:h-32 rounded-2xl overflow-hidden border-4 border-white/30 shadow-xl flex-shrink-0 bg-white group cursor-pointer ${isInternalPanel ? '' : '-mb-16 sm:-mb-20'}`}
               onClick={() => fotoInputRef.current?.click()}
             >
               {(guru.foto || fotoPreview) && !fotoError ? (
@@ -413,16 +524,18 @@ export default function ProfilSaya() {
                 </div>
               )}
 
-              {/* Overlay hover */}
-              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1.5 pointer-events-none">
-                <div className="text-white text-xs font-medium flex items-center gap-1.5 bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-full">
-                  <Camera className="w-3.5 h-3.5" />
-                  {guru.foto ? 'Ganti Foto' : 'Upload Foto'}
+              {/* Overlay hover — tidak ditampilkan di panel /internal */}
+              {!isInternalPanel && (
+                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1.5 pointer-events-none">
+                  <div className="text-white text-xs font-medium flex items-center gap-1.5 bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-full">
+                    <Camera className="w-3.5 h-3.5" />
+                    {guru.foto ? 'Ganti Foto' : 'Upload Foto'}
+                  </div>
                 </div>
-              </div>
+              )}
 
-              {/* Tombol Hapus Foto */}
-              {guru.foto && !uploadingFoto && (
+              {/* Tombol Hapus Foto — tidak ditampilkan di panel /internal */}
+              {!isInternalPanel && guru.foto && !uploadingFoto && (
                 <button
                   type="button"
                   onClick={(e) => { e.stopPropagation(); handleDeleteFoto() }}
@@ -448,39 +561,36 @@ export default function ProfilSaya() {
               />
             </div>
 
-            {/* Info dasar */}
-            <div className="text-white text-center sm:text-left pb-1 flex-1 min-w-0">
-              <h1 className="text-2xl sm:text-3xl font-bold mb-1">{guru.nama}</h1>
-              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-4 gap-y-1 text-white/80 text-sm">
-                {guru.nik && (
-                  <span className="flex items-center gap-1.5">
-                    <Hash className="w-3.5 h-3.5" /> NIK: {guru.nik}
-                  </span>
-                )}
-                {guru.jenis_kelamin && (
-                  <span className="flex items-center gap-1.5">
-                    <User className="w-3.5 h-3.5" />
-                    {guru.jenis_kelamin === 'L' ? 'Laki-laki' : 'Perempuan'}
-                  </span>
-                )}
-                <span className="flex items-center gap-1.5">
-                  <User className="w-3.5 h-3.5" /> @{guru.username || user.username}
-                </span>
-              </div>
-            </div>
-
-            {/* Role badge */}
-            <div className="pb-1">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border backdrop-blur-sm bg-white/20 text-white border-white/30">
-                <GraduationCap className="w-3.5 h-3.5" />
-                Karyawan
-              </span>
-            </div>
+            {/* Info dasar + aksi foto.
+                Panel mobile (/internal): badge tetap di bawah nama, lalu tombol
+                kamera/upload diturunkan jadi satu baris rata kiri, sejajar dengan
+                tepi kiri foto. */}
+            {isInternalPanel ? (
+              <>
+                <div className="flex-1 min-w-0">
+                  {infoProfil}
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    {badgeKaryawan}
+                  </div>
+                </div>
+                {/* Satu baris: Ambil Foto dari Kamera + Upload, rata kiri */}
+                <div className="w-full flex flex-wrap items-center gap-2">
+                  {tombolFoto}
+                </div>
+              </>
+            ) : (
+              <>
+                {infoProfil}
+                <div className="pb-1 flex flex-col items-center sm:items-end gap-2">
+                  {aksiFotoProfil}
+                </div>
+              </>
+            )}
           </div>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 px-6 pt-24 sm:pt-20 pb-6">
+        <div className={`grid grid-cols-1 sm:grid-cols-3 gap-4 px-6 pb-6 ${isInternalPanel ? 'pt-6' : 'pt-24 sm:pt-20'}`}>
           <div className="bg-gradient-to-br from-annajah-50 to-white rounded-xl p-4 border border-annajah-100">
             <div className="flex items-center gap-2 text-annajah-600 mb-1">
               <School className="w-4 h-4" />
@@ -519,6 +629,24 @@ export default function ProfilSaya() {
             <p className="text-xl font-bold text-gray-800 truncate">{guru.username || user.username}</p>
             <p className="text-xs text-gray-400 mt-0.5">username login sistem</p>
           </div>
+        </div>
+
+        {/* Keterangan foto identitas absensi */}
+        <div className="px-6 pb-6 -mt-1">
+          {guru.foto ? (
+            <p className="text-xs text-gray-500 flex items-center gap-1.5">
+              <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
+              Foto ini dipakai sebagai identitas verifikasi wajah saat absen kehadiran.
+            </p>
+          ) : (
+            <div className="flex items-start gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-xl p-3">
+              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+              <span>
+                Foto identitas belum diatur. Absen masuk & keluar belum dapat dilakukan sampai Anda
+                mengambil foto wajah lewat tombol <strong>Ambil Foto dari Kamera</strong> di atas.
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -908,6 +1036,17 @@ export default function ProfilSaya() {
         </div>
       )}
 
+      {/* Kamera — ambil foto identitas absensi */}
+      {showCamera && (
+        <CameraCapture
+          title="Ambil Foto Identitas"
+          subtitle="Foto ini dipakai untuk verifikasi wajah saat absen"
+          allowSkip={false}
+          onCapture={handleCameraCapture}
+          onClose={() => setShowCamera(false)}
+        />
+      )}
+
       {/* Crop Foto Modal */}
       {showCropModal && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/70" onClick={handleCropCancel}>
@@ -919,7 +1058,10 @@ export default function ProfilSaya() {
                   <X className="w-5 h-5 text-gray-400" />
                 </button>
               </div>
-              <p className="text-sm text-gray-500 mb-4">Seret untuk memilih area foto. Gunakan slider untuk zoom.</p>
+              <p className="text-sm text-gray-500 mb-4">
+                Seret untuk memilih area foto. Gunakan slider untuk zoom. Hasil crop dipakai sebagai foto
+                identitas verifikasi wajah saat absen.
+              </p>
 
               <div className="relative w-full h-72 md:h-80 bg-gray-900 rounded-xl overflow-hidden">
                 <Cropper

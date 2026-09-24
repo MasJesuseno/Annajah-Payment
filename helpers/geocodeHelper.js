@@ -4,6 +4,7 @@
  */
 
 const https = require('https');
+const http = require('http');
 
 /**
  * Reverse geocode latitude/longitude to get administrative region info.
@@ -29,19 +30,48 @@ async function reverseGeocode(lat, lng) {
     }
 
     const addr = data.address;
+    const first = (...vals) => vals.find((v) => v) || '';
 
     // Truncate address fields to fit within VARCHAR(500) column when JSON stringified
     const truncate = (val, maxLen = 60) => val ? String(val).substring(0, maxLen) : '';
 
-    // Map OpenStreetMap address fields to Indonesian administrative divisions
+    // Kunci address Nominatim bervariasi per wilayah (kota memakai district/
+    // city_district, desa memakai county, dsb) — dipakai sebagai nilai utama
+    // untuk kelurahan dan cadangan untuk lainnya.
+    const fromKeys = {
+      kelurahan: first(addr.village, addr.suburb, addr.neighbourhood, addr.hamlet),
+      kecamatan: first(addr.district, addr.city_district, addr.municipality, addr.borough),
+      kabupaten: first(addr.city, addr.town, addr.county, addr.state_district, addr.region),
+      provinsi: first(addr.state, addr.province),
+    };
+
+    // display_name Indonesia selalu berurutan:
+    //   ..., Kelurahan/Desa, Kecamatan, Kabupaten/Kota, Provinsi, [Kode Pos], Indonesia
+    // Dipakai sebagai sumber utama Kecamatan/Kabupaten/Provinsi supaya tidak
+    // tertukar (pemetaan key saja sering meleset antar wilayah).
+    const tail = String(data.display_name || '').split(',').map((s) => s.trim()).filter(Boolean);
+    if (tail[tail.length - 1] === 'Indonesia') tail.pop();
+    if (/^\d{4,5}$/.test(tail[tail.length - 1] || '')) tail.pop();
+    const t = [...tail];
+    const fromDisplay = {
+      provinsi: t.pop() || '',
+      kabupaten: t.pop() || '',
+      kecamatan: t.pop() || '',
+    };
+
     const result = {
       lat: String(latNum),
       lng: String(lngNum),
-      kelurahan: truncate(addr.village || addr.suburb || addr.neighbourhood || addr.hamlet || addr.town || ''),
-      kecamatan: truncate(addr.county || addr.city_district || addr.municipality || ''),
-      kabupaten: truncate(addr.city || addr.town || addr.state_district || addr.region || ''),
-      provinsi: truncate(addr.state || addr.province || ''),
+      kelurahan: fromKeys.kelurahan || t.pop() || '',
+      kecamatan: fromDisplay.kecamatan || fromKeys.kecamatan || '',
+      kabupaten: fromDisplay.kabupaten || fromKeys.kabupaten || '',
+      provinsi: fromDisplay.provinsi || fromKeys.provinsi || '',
     };
+
+    result.kelurahan = truncate(result.kelurahan);
+    result.kecamatan = truncate(result.kecamatan);
+    result.kabupaten = truncate(result.kabupaten);
+    result.provinsi = truncate(result.provinsi);
 
     // Ensure the entire JSON string fits in VARCHAR(500)
     const jsonStr = JSON.stringify(result);
@@ -62,27 +92,37 @@ async function reverseGeocode(lat, lng) {
 
 /**
  * Simple HTTPS/HTTP JSON fetcher with timeout.
+ * Catatan: header & timeout HARUS dikirim sebagai opsi kedua `client.get(url, opts, cb)`
+ * — men-set properti di objek URL diabaikan Node, sehingga User-Agent tidak
+ * terkirim dan Nominatim membalas 403 (wilayah tidak pernah ter-enrich).
  */
 function fetchJson(url) {
   return new Promise((resolve, reject) => {
     const client = url.startsWith('https') ? https : http;
-    const options = new URL(url);
-    options.headers = {
-      'User-Agent': 'SMAAnnajahApp/1.0 (administrasi@sma-annajah.sch.id)',
-      'Accept': 'application/json',
-    };
-    options.timeout = 5000;
-    const req = client.get(options, (res) => {
-      let body = '';
-      res.on('data', (chunk) => { body += chunk; });
-      res.on('end', () => {
-        try {
-          resolve(JSON.parse(body));
-        } catch {
-          reject(new Error('Invalid JSON response'));
-        }
-      });
-    });
+    const req = client.get(
+      url,
+      {
+        headers: {
+          'User-Agent': 'SMAAnnajahApp/1.0 (administrasi@sma-annajah.sch.id)',
+          'Accept': 'application/json',
+        },
+        timeout: 8000, // Nominatim bisa lambat di request pertama
+      },
+      (res) => {
+        let body = '';
+        res.on('data', (chunk) => { body += chunk; });
+        res.on('end', () => {
+          if (res.statusCode && res.statusCode >= 400) {
+            return reject(new Error(`HTTP ${res.statusCode}`));
+          }
+          try {
+            resolve(JSON.parse(body));
+          } catch {
+            reject(new Error('Invalid JSON response'));
+          }
+        });
+      }
+    );
     req.on('error', reject);
     req.on('timeout', () => {
       req.destroy();

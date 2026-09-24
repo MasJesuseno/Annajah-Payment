@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { login as apiLogin, getMe } from '../api'
+import { login as apiLogin, getMe, internalLogin as apiInternalLogin, getInternalMe } from '../api'
 
 const AuthContext = createContext(null)
 
@@ -11,7 +11,9 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const token = localStorage.getItem('token')
     if (token) {
-      getMe()
+      // Panel /Internal memakai endpoint sesi sendiri (menyertakan data karyawan & hak akses)
+      const fetchMe = window.location.pathname.startsWith('/internal') ? getInternalMe : getMe
+      fetchMe()
         .then((res) => {
           setUser(res.data)
         })
@@ -38,6 +40,20 @@ export function AuthProvider({ children }) {
     return res.data
   }
 
+  // Login khusus Panel /Internal (mobile karyawan)
+  const loginInternal = async (username, password, captchaData) => {
+    const payload = { username, password }
+    if (captchaData) {
+      payload.captcha_token = captchaData.token
+      payload.captcha_answer = captchaData.answer
+    }
+    const res = await apiInternalLogin(payload)
+    localStorage.setItem('token', res.data.token)
+    localStorage.setItem('user', JSON.stringify(res.data.user))
+    setUser(res.data.user)
+    return res.data
+  }
+
   const logout = () => {
     localStorage.removeItem('token')
     localStorage.removeItem('user')
@@ -45,7 +61,7 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, loginInternal, logout, loading }}>
       {children}
     </AuthContext.Provider>
   )

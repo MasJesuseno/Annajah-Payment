@@ -143,11 +143,21 @@ async function initDatabase() {
     `);
 
     // Add foto_masuk & foto_keluar columns to kehadiran_guru if not exists (for migration)
+    // Catatan: kolom ini hanya untuk data lama — absen baru memakai verifikasi wajah
+    // (skor_wajah_masuk / skor_wajah_keluar) dan tidak lagi menyimpan foto.
     try {
       await conn.execute(`ALTER TABLE kehadiran_guru ADD COLUMN foto_masuk VARCHAR(255) DEFAULT NULL`);
     } catch (e) {}
     try {
       await conn.execute(`ALTER TABLE kehadiran_guru ADD COLUMN foto_keluar VARCHAR(255) DEFAULT NULL`);
+    } catch (e) {}
+
+    // Skor verifikasi wajah (jarak face descriptor) saat absen masuk & keluar
+    try {
+      await conn.execute(`ALTER TABLE kehadiran_guru ADD COLUMN skor_wajah_masuk DECIMAL(5,4) DEFAULT NULL`);
+    } catch (e) {}
+    try {
+      await conn.execute(`ALTER TABLE kehadiran_guru ADD COLUMN skor_wajah_keluar DECIMAL(5,4) DEFAULT NULL`);
     } catch (e) {}
 
     // Add id_wali column to kelas if not exists
@@ -304,8 +314,10 @@ async function initDatabase() {
         jam_keluar TIME DEFAULT NULL,
         gps_masuk VARCHAR(500) DEFAULT NULL,
         gps_keluar VARCHAR(500) DEFAULT NULL,
-        foto_masuk VARCHAR(255) DEFAULT NULL,
-        foto_keluar VARCHAR(255) DEFAULT NULL,
+        foto_masuk VARCHAR(255) DEFAULT NULL COMMENT 'data lama - absen baru tidak menyimpan foto',
+        foto_keluar VARCHAR(255) DEFAULT NULL COMMENT 'data lama - absen baru tidak menyimpan foto',
+        skor_wajah_masuk DECIMAL(5,4) DEFAULT NULL,
+        skor_wajah_keluar DECIMAL(5,4) DEFAULT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (id_guru) REFERENCES guru(id) ON DELETE CASCADE
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci

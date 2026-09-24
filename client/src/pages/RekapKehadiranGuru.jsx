@@ -5,6 +5,7 @@ import {
 } from 'lucide-react'
 import { getRekapKehadiranGuru } from '../api'
 import { parseGpsData } from '../utils/formatGps'
+import VerifikasiWajah from '../components/VerifikasiWajah'
 
 const statusColors = {
   hadir: 'bg-green-100 text-green-700 border-green-200',
@@ -334,8 +335,9 @@ export default function RekapKehadiranGuru() {
                     <div className="col-span-3">Nama Guru</div>
                     <div className="col-span-2">Jam Masuk</div>
                     <div className="col-span-2">Jam Keluar</div>
-                    <div className="col-span-2">Status</div>
-                    <div className="col-span-3">GPS</div>
+                    <div className="col-span-1">Status</div>
+                    <div className="col-span-2">Verifikasi Wajah</div>
+                    <div className="col-span-2">GPS</div>
                   </div>
 
                   <div className="divide-y divide-gray-50 mt-2">
@@ -364,15 +366,22 @@ export default function RekapKehadiranGuru() {
                             <span className="text-gray-400">-</span>
                           )}
                         </div>
-                        <div className="col-span-6 sm:col-span-2">
-                          <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full border ${statusColors[guru.status] || ''}`}>
+                        <div className="col-span-6 sm:col-span-1">
+                          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border whitespace-nowrap ${statusColors[guru.status] || ''}`}>
                             {guru.status === 'hadir' ? <CheckCircle className="w-3 h-3 inline mr-1 -mt-0.5" /> :
                              guru.status === 'ijin' ? <Clock className="w-3 h-3 inline mr-1 -mt-0.5" /> :
                              <XCircle className="w-3 h-3 inline mr-1 -mt-0.5" />}
                             {guru.status === 'hadir' ? 'Hadir' : guru.status === 'ijin' ? 'Ijin' : 'Alpa'}
                           </span>
                         </div>
-                        <div className="col-span-6 sm:col-span-3">
+                        <div className="col-span-6 sm:col-span-2">
+                          <VerifikasiWajah
+                            skorMasuk={guru.skor_wajah_masuk}
+                            skorKeluar={guru.skor_wajah_keluar}
+                            withLabel
+                          />
+                        </div>
+                        <div className="col-span-6 sm:col-span-2">
                           <div className="flex flex-col gap-0.5">
                             {(() => {
                               const gps = parseGpsData(guru.gps_masuk)

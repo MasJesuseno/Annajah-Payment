@@ -1,7 +1,12 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
-import { Clock, MapPin, LogIn, LogOut, RefreshCw, History, CheckCircle, XCircle, Loader2, Navigation, ChevronLeft, ChevronRight, Camera, CameraOff, Image as ImageIcon } from 'lucide-react'
-import { getStatusKehadiranGuru, absenMasukGuru, absenKeluarGuru, getKehadiranGuruSaya } from '../api'
-import { parseGpsData } from '../utils/formatGps'
+import { useState, useEffect, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { Clock, MapPin, LogIn, LogOut, RefreshCw, History, CheckCircle, XCircle, Loader2, Navigation, ChevronLeft, ChevronRight, ShieldCheck, AlertTriangle } from 'lucide-react'
+import { getStatusKehadiranGuru, absenMasukGuru, absenKeluarGuru, getKehadiranGuruSaya, getGuruById } from '../api'
+import { parseGpsData, reverseGeocodeGps, formatWilayah } from '../utils/formatGps'
+import { useAuth } from '../context/AuthContext'
+import { getProfileFotoUrl, similarityPercent, preloadFaceModels } from '../utils/faceMatch'
+import CameraCapture from '../components/CameraCapture'
+import VerifikasiWajah from '../components/VerifikasiWajah'
 
 const FOTO_BASE_URL = '/uploads/kehadiran-guru/'
 
@@ -17,188 +22,29 @@ function formatJam(jam) {
   return jam.slice(0, 5)
 }
 
-// Camera capture modal component
-function CameraModal({ mode, onCapture, onClose }) {
-  const videoRef = useRef(null)
-  const canvasRef = useRef(null)
-  const [stream, setStream] = useState(null)
-  const [capturedImage, setCapturedImage] = useState(null)
-  const [cameraError, setCameraError] = useState('')
-  const [loading, setLoading] = useState(true)
-
-  const startCamera = useCallback(async () => {
-    try {
-      setLoading(true)
-      setCameraError('')
-      const s = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
-        audio: false,
-      })
-      setStream(s)
-      if (videoRef.current) {
-        videoRef.current.srcObject = s
-      }
-    } catch (err) {
-      let msg = 'Tidak dapat mengakses kamera'
-      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-        msg = 'Izin kamera ditolak. Izinkan akses kamera di browser.'
-      } else if (err.name === 'NotFoundError') {
-        msg = 'Kamera tidak ditemukan di perangkat ini.'
-      }
-      setCameraError(msg)
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    startCamera()
-    return () => {
-      // Cleanup: stop all tracks
-      if (stream) {
-        stream.getTracks().forEach(t => t.stop())
-      }
-    }
-  }, [startCamera])
-
-  const handleCapture = () => {
-    if (!videoRef.current || !canvasRef.current) return
-    const video = videoRef.current
-    const canvas = canvasRef.current
-    canvas.width = video.videoWidth
-    canvas.height = video.videoHeight
-    canvas.getContext('2d').drawImage(video, 0, 0)
-    const imageData = canvas.toDataURL('image/jpeg', 0.7)
-    setCapturedImage(imageData)
-  }
-
-  const handleRetake = () => {
-    setCapturedImage(null)
-  }
-
-  const handleConfirm = () => {
-    if (capturedImage) {
-      onCapture(capturedImage)
-    }
-    // Stop camera
-    if (stream) {
-      stream.getTracks().forEach(t => t.stop())
-    }
-  }
-
-  const handleClose = () => {
-    if (stream) {
-      stream.getTracks().forEach(t => t.stop())
-    }
-    onClose()
-  }
-
-  const label = mode === 'masuk' ? 'Absen Masuk' : 'Absen Keluar'
-
-  return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={handleClose}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden" onClick={(e) => e.stopPropagation()}>
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-100">
-          <div className="flex items-center gap-2">
-            <Camera className="w-5 h-5 text-annajah-600" />
-            <h2 className="text-lg font-semibold text-gray-800">Foto {label}</h2>
-          </div>
-          <button onClick={handleClose} className="p-1.5 hover:bg-gray-100 rounded-lg transition-all">
-            <XCircle className="w-5 h-5 text-gray-400" />
-          </button>
-        </div>
-
-        {/* Camera / Preview */}
-        <div className="p-4">
-          {cameraError ? (
-            <div className="text-center py-10 space-y-3">
-              <CameraOff className="w-16 h-16 text-red-300 mx-auto" />
-              <p className="text-sm text-red-600 font-medium">{cameraError}</p>
-              <p className="text-xs text-gray-400">Atau, lanjutkan absen tanpa foto</p>
-              <div className="flex gap-3 justify-center pt-2">
-                <button onClick={startCamera} className="btn-secondary text-sm">
-                  Coba Lagi
-                </button>
-                <button onClick={() => { onCapture(null); handleClose() }} className="btn-primary text-sm">
-                  Lanjut Tanpa Foto
-                </button>
-              </div>
-            </div>
-          ) : !capturedImage ? (
-            <div className="relative bg-black rounded-xl overflow-hidden">
-              <video
-                ref={videoRef}
-                autoPlay
-                playsInline
-                muted
-                className="w-full aspect-[4/3] object-cover"
-              />
-              {loading && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-                  <Loader2 className="w-8 h-8 animate-spin text-white" />
-                </div>
-              )}
-              <canvas ref={canvasRef} className="hidden" />
-            </div>
-          ) : (
-            <div className="relative rounded-xl overflow-hidden">
-              <img src={capturedImage} alt="Preview" className="w-full aspect-[4/3] object-cover" />
-              <div className="absolute top-2 right-2 bg-green-500 text-white text-xs font-semibold px-2 py-1 rounded-full flex items-center gap-1">
-                <CheckCircle className="w-3 h-3" /> Foto diambil
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Actions */}
-        {!cameraError && (
-          <div className="flex gap-3 p-4 border-t border-gray-100">
-            {!capturedImage ? (
-              <>
-                <button onClick={handleCapture} disabled={loading} className="btn-primary flex-1 flex items-center justify-center gap-2 py-3">
-                  {loading ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                  ) : (
-                    <Camera className="w-5 h-5" />
-                  )}
-                  {loading ? 'Menyiapkan kamera...' : 'Ambil Foto'}
-                </button>
-                <button onClick={() => { onCapture(null); handleClose() }} className="btn-secondary flex-1">
-                  Lewati
-                </button>
-              </>
-            ) : (
-              <>
-                <button onClick={handleConfirm} className="btn-primary flex-1 flex items-center justify-center gap-2 py-3">
-                  <CheckCircle className="w-5 h-5" />
-                  Gunakan Foto Ini
-                </button>
-                <button onClick={handleRetake} className="btn-secondary flex-1 flex items-center justify-center gap-2">
-                  <Camera className="w-4 h-4" />
-                  Ulang
-                </button>
-              </>
-            )}
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
-
 export default function KehadiranGuruSaya() {
+  const { user } = useAuth()
+  const navigate = useNavigate()
+  const isInternalPanel = window.location.pathname.startsWith('/internal')
+  const profilPath = isInternalPanel ? '/internal/profil' : '/profil-saya'
+
   const [todayStatus, setTodayStatus] = useState(null)
   const [loadingStatus, setLoadingStatus] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [gpsStatus, setGpsStatus] = useState('idle') // idle, loading, acquired, error
   const [gpsCoords, setGpsCoords] = useState(null)
   const [gpsError, setGpsError] = useState('')
+  // Detail wilayah (Kelurahan, Kecamatan, Kabupaten) — untuk tampilan status GPS
+  const [gpsWilayah, setGpsWilayah] = useState(null)
   const [message, setMessage] = useState({ type: '', text: '' })
 
   // Camera modal
   const [showCamera, setShowCamera] = useState(false)
   const [cameraMode, setCameraMode] = useState('masuk') // 'masuk' or 'keluar'
+
+  // Foto identitas (foto profil) — dipakai untuk verifikasi wajah saat absen
+  const [fotoIdentitas, setFotoIdentitas] = useState(user?.foto || null)
+  const [loadingFoto, setLoadingFoto] = useState(false)
 
   // History
   const [history, setHistory] = useState([])
@@ -220,6 +66,7 @@ export default function KehadiranGuruSaya() {
     }
     return new Promise((resolve) => {
       setGpsStatus('loading')
+      setGpsWilayah(null)
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           const coords = {
@@ -228,6 +75,10 @@ export default function KehadiranGuruSaya() {
           }
           setGpsCoords(coords)
           setGpsStatus('acquired')
+          // Detail wilayah (Kel./Kec./Kab.) untuk tampilan — tidak memblokir absen
+          reverseGeocodeGps(coords.latitude, coords.longitude).then((w) => {
+            if (w) setGpsWilayah(w)
+          })
           resolve(coords)
         },
         (err) => {
@@ -272,36 +123,78 @@ export default function KehadiranGuruSaya() {
     }
   }
 
+  // Ambil foto identitas terbaru dari data karyawan (bisa berubah dari halaman Profil Saya)
+  const loadFotoIdentitas = async () => {
+    if (!user?.guru_id) return
+    try {
+      setLoadingFoto(true)
+      const res = await getGuruById(user.guru_id)
+      setFotoIdentitas(res.data?.foto || null)
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setLoadingFoto(false)
+    }
+  }
+
   useEffect(() => {
     loadStatus()
     loadHistory(1)
     getLocation()
   }, [getLocation])
 
+  useEffect(() => {
+    loadFotoIdentitas()
+  }, [user?.guru_id])
+
+  // Unduh model verifikasi wajah sejak halaman dibuka — saat absen nanti
+  // verifikasi tidak perlu menunggu unduhan ±7MB di tengah proses
+  useEffect(() => {
+    preloadFaceModels()
+  }, [])
+
+  const fotoIdentitasUrl = getProfileFotoUrl(fotoIdentitas)
+  const gpsWilayahLabel = formatWilayah(gpsWilayah)
+
+  // Absen hanya boleh dilakukan bila foto identitas sudah diatur — foto ini
+  // menjadi acuan verifikasi wajah saat absen.
+  const requireFotoIdentitas = () => {
+    if (fotoIdentitasUrl) return true
+    showMessage('error', 'Foto identitas belum diatur. Ambil foto dari kamera di menu Profil Saya terlebih dahulu.')
+    return false
+  }
+
   // Open camera modal before absen
   const handleAbsenMasukClick = () => {
+    if (!requireFotoIdentitas()) return
     setCameraMode('masuk')
     setShowCamera(true)
   }
 
   const handleAbsenKeluarClick = () => {
+    if (!requireFotoIdentitas()) return
     setCameraMode('keluar')
     setShowCamera(true)
   }
 
-  // Called after camera captures (or skips) a photo
-  const handleCameraCapture = async (fotoBase64) => {
+  // Called after camera captures (and verifies) a photo
+  const handleCameraCapture = async (fotoBase64, meta) => {
     setShowCamera(false)
+
+    if (!fotoBase64) {
+      showMessage('error', 'Foto wajah wajib diambil untuk absen.')
+      return
+    }
 
     // Proceed with absen
     if (cameraMode === 'masuk') {
-      await doAbsenMasuk(fotoBase64)
+      await doAbsenMasuk(fotoBase64, meta)
     } else {
-      await doAbsenKeluar(fotoBase64)
+      await doAbsenKeluar(fotoBase64, meta)
     }
   }
 
-  const doAbsenMasuk = async (fotoBase64) => {
+  const doAbsenMasuk = async (fotoBase64, meta) => {
     if (submitting) return
     try {
       setSubmitting(true)
@@ -309,12 +202,13 @@ export default function KehadiranGuruSaya() {
       if (navigator.geolocation) {
         gps = await getLocation()
       }
+      // Foto absen tidak dikirim/disimpan — cukup skor verifikasi wajahnya
       const payload = { gps_masuk: gps || undefined }
-      if (fotoBase64) {
-        payload.foto_masuk = fotoBase64
+      if (meta?.distance !== null && meta?.distance !== undefined) {
+        payload.skor_wajah_masuk = meta.distance
       }
       await absenMasukGuru(payload)
-      showMessage('success', 'Absen masuk berhasil dengan foto!')
+      showMessage('success', `Absen masuk berhasil! Wajah terverifikasi dengan foto identitas${meta?.similarity != null ? ` (${meta.similarity}%)` : ''}.`)
       await loadStatus()
       await loadHistory(1)
     } catch (err) {
@@ -325,7 +219,7 @@ export default function KehadiranGuruSaya() {
     }
   }
 
-  const doAbsenKeluar = async (fotoBase64) => {
+  const doAbsenKeluar = async (fotoBase64, meta) => {
     if (submitting || !todayStatus?.data?.id) return
     try {
       setSubmitting(true)
@@ -333,12 +227,13 @@ export default function KehadiranGuruSaya() {
       if (navigator.geolocation) {
         gps = await getLocation()
       }
+      // Foto absen tidak dikirim/disimpan — cukup skor verifikasi wajahnya
       const payload = { gps_keluar: gps || undefined }
-      if (fotoBase64) {
-        payload.foto_keluar = fotoBase64
+      if (meta?.distance !== null && meta?.distance !== undefined) {
+        payload.skor_wajah_keluar = meta.distance
       }
       await absenKeluarGuru(todayStatus.data.id, payload)
-      showMessage('success', 'Absen keluar berhasil dengan foto!')
+      showMessage('success', `Absen keluar berhasil! Wajah terverifikasi dengan foto identitas${meta?.similarity != null ? ` (${meta.similarity}%)` : ''}.`)
       await loadStatus()
       await loadHistory(1)
     } catch (err) {
@@ -372,6 +267,25 @@ export default function KehadiranGuruSaya() {
         </div>
       )}
 
+      {/* Foto identitas — acuan verifikasi wajah saat absen */}
+      {!loadingFoto && !fotoIdentitasUrl && (
+        <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-800 flex flex-col sm:flex-row sm:items-center gap-3">
+          <div className="flex items-start gap-2 flex-1">
+            <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
+            <div>
+              <p className="font-semibold">Foto identitas belum diatur</p>
+              <p className="text-xs text-amber-700 mt-0.5">
+                Absen masuk & keluar memakai verifikasi wajah terhadap foto profil. Ambil foto dari kamera
+                di menu Profil Saya terlebih dahulu.
+              </p>
+            </div>
+          </div>
+          <button onClick={() => navigate(profilPath)} className="btn-primary text-sm shrink-0">
+            Atur Foto Identitas
+          </button>
+        </div>
+      )}
+
       {/* Today's Status + Absen Card */}
       <div className="card bg-gradient-to-br from-annajah-50 to-blue-50 border border-annajah-100 overflow-hidden">
         <div className="text-center sm:text-left sm:flex sm:items-center sm:justify-between gap-6">
@@ -397,9 +311,10 @@ export default function KehadiranGuruSaya() {
                         <MapPin className="w-3 h-3 inline mr-0.5" /> {todayStatus.data.gps_masuk.display}
                       </span>
                     )}
-                    {todayStatus.data?.foto_masuk && (
-                      <span className="ml-3 text-xs text-green-500">
-                        <Camera className="w-3 h-3 inline mr-0.5" /> Ada foto
+                    {todayStatus.data?.skor_wajah_masuk != null && (
+                      <span className="ml-3 text-xs text-emerald-600 font-medium">
+                        <ShieldCheck className="w-3 h-3 inline mr-0.5" />
+                        Wajah cocok {similarityPercent(Number(todayStatus.data.skor_wajah_masuk))}%
                       </span>
                     )}
                   </p>
@@ -412,9 +327,10 @@ export default function KehadiranGuruSaya() {
                         <MapPin className="w-3 h-3 inline mr-0.5" /> {todayStatus.data.gps_keluar.display}
                       </span>
                     )}
-                    {todayStatus.data?.foto_keluar && (
-                      <span className="ml-3 text-xs text-amber-500">
-                        <Camera className="w-3 h-3 inline mr-0.5" /> Ada foto
+                    {todayStatus.data?.skor_wajah_keluar != null && (
+                      <span className="ml-3 text-xs text-emerald-600 font-medium">
+                        <ShieldCheck className="w-3 h-3 inline mr-0.5" />
+                        Wajah cocok {similarityPercent(Number(todayStatus.data.skor_wajah_keluar))}%
                       </span>
                     )}
                   </p>
@@ -440,12 +356,15 @@ export default function KehadiranGuruSaya() {
                 gpsStatus === 'loading' ? 'text-blue-500 animate-pulse' :
                 gpsStatus === 'error' ? 'text-red-500' : 'text-gray-400'
               }`} />
-              <span className={
-                gpsStatus === 'acquired' ? 'text-green-600' :
-                gpsStatus === 'loading' ? 'text-blue-600' :
-                gpsStatus === 'error' ? 'text-red-500' : 'text-gray-400'
-              }>
-                {gpsStatus === 'acquired' ? `Lokasi: ${gpsCoords?.latitude}, ${gpsCoords?.longitude}` :
+              <span
+                className={
+                  gpsStatus === 'acquired' ? 'text-green-600' :
+                  gpsStatus === 'loading' ? 'text-blue-600' :
+                  gpsStatus === 'error' ? 'text-red-500' : 'text-gray-400'
+                }
+                title={gpsStatus === 'acquired' ? `${gpsCoords?.latitude}, ${gpsCoords?.longitude}` : ''}
+              >
+                {gpsStatus === 'acquired' ? `Lokasi: ${gpsWilayahLabel || `${gpsCoords?.latitude}, ${gpsCoords?.longitude}`}` :
                  gpsStatus === 'loading' ? 'Mendapatkan lokasi...' :
                  gpsStatus === 'error' ? gpsError :
                  'Menunggu lokasi...'}
@@ -495,10 +414,14 @@ export default function KehadiranGuruSaya() {
         </div>
       </div>
 
-      {/* Camera Modal */}
+      {/* Camera Modal — foto diverifikasi dengan foto identitas */}
       {showCamera && (
-        <CameraModal
-          mode={cameraMode}
+        <CameraCapture
+          title={`Foto Absen ${cameraMode === 'masuk' ? 'Masuk' : 'Keluar'}`}
+          subtitle="Wajah dicek kesesuaiannya dengan foto identitas"
+          referenceFotoUrl={fotoIdentitasUrl}
+          verifyFace
+          allowSkip={false}
           onCapture={handleCameraCapture}
           onClose={() => setShowCamera(false)}
         />
@@ -516,7 +439,7 @@ export default function KehadiranGuruSaya() {
           <div className="col-span-2">Jam Masuk</div>
           <div className="col-span-2">Jam Keluar</div>
           <div className="col-span-3">Lokasi</div>
-          <div className="col-span-3">Foto</div>
+          <div className="col-span-3">Verifikasi Wajah</div>
         </div>
 
         {loadingHistory ? (
@@ -587,7 +510,7 @@ export default function KehadiranGuruSaya() {
                 <div className="col-span-12 sm:col-span-3">
                   <div className="flex items-center gap-2">
                     {item.foto_masuk ? (
-                      <div className="group relative" title="Foto Masuk">
+                      <div className="group relative" title="Foto Masuk (data lama)">
                         <img
                           src={`${FOTO_BASE_URL}${item.foto_masuk}`}
                           alt="Foto masuk"
@@ -600,7 +523,7 @@ export default function KehadiranGuruSaya() {
                       </div>
                     ) : null}
                     {item.foto_keluar ? (
-                      <div className="group relative" title="Foto Keluar">
+                      <div className="group relative" title="Foto Keluar (data lama)">
                         <img
                           src={`${FOTO_BASE_URL}${item.foto_keluar}`}
                           alt="Foto keluar"
@@ -612,11 +535,11 @@ export default function KehadiranGuruSaya() {
                         </span>
                       </div>
                     ) : null}
-                    {!item.foto_masuk && !item.foto_keluar && (
-                      <span className="text-[10px] text-gray-400 flex items-center gap-1">
-                        <CameraOff className="w-3 h-3" /> Tanpa foto
-                      </span>
-                    )}
+                    <VerifikasiWajah
+                      skorMasuk={item.skor_wajah_masuk}
+                      skorKeluar={item.skor_wajah_keluar}
+                      withLabel
+                    />
                   </div>
                 </div>
 
@@ -632,8 +555,7 @@ export default function KehadiranGuruSaya() {
                       </>
                     )
                   })()}
-                  {item.foto_masuk && <span className="text-green-500"><Camera className="w-3 h-3 inline" /> Foto masuk</span>}
-                  {item.foto_keluar && <span className="text-amber-500"><Camera className="w-3 h-3 inline" /> Foto keluar</span>}
+                  <VerifikasiWajah skorMasuk={item.skor_wajah_masuk} skorKeluar={item.skor_wajah_keluar} />
                 </div>
               </div>
             ))}

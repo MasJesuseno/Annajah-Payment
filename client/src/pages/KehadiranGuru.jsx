@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
-import { Calendar, Clock, MapPin, Search, RefreshCw, ChevronLeft, ChevronRight, Users, Edit3, X, Loader2, CheckCircle, Camera, CameraOff, LogIn, LogOut } from 'lucide-react'
+import { Calendar, Clock, MapPin, Search, RefreshCw, ChevronLeft, ChevronRight, Users, Edit3, X, Loader2, CheckCircle, LogIn, LogOut } from 'lucide-react'
 import { getKehadiranGuru, getGuru, createKehadiranGuru, updateKehadiranGuru, downloadExcelKehadiranGuru, backfillGpsKehadiranGuru } from '../api'
 import { parseGpsData } from '../utils/formatGps'
 import { useAuth } from '../context/AuthContext'
+import VerifikasiWajah from '../components/VerifikasiWajah'
 
 function formatTanggal(tgl) {
   if (!tgl) return '-'
@@ -275,7 +276,7 @@ export default function KehadiranGuru() {
           <div className="col-span-2">Tanggal</div>
           <div className="col-span-2">Jam</div>
           <div className="col-span-2">GPS</div>
-          <div className="col-span-3">Foto</div>
+          <div className="col-span-3">Verifikasi Wajah</div>
           <div className="col-span-1">Status</div>
         </div>
 
@@ -351,37 +352,30 @@ export default function KehadiranGuru() {
                 </div>
                 <div className="col-span-12 sm:col-span-3">
                   <div className="flex items-center gap-2">
+                    <VerifikasiWajah
+                      skorMasuk={item.skor_wajah_masuk}
+                      skorKeluar={item.skor_wajah_keluar}
+                      withLabel
+                    />
+                    {/* Foto absen lama (data sebelum verifikasi wajah) */}
                     {item.foto_masuk ? (
-                      <div className="group relative" title="Foto Masuk">
-                        <img
-                          src={`/uploads/kehadiran-guru/${item.foto_masuk}`}
-                          alt="Foto masuk"
-                          className="w-9 h-9 rounded-lg object-cover border border-green-200 cursor-pointer"
-                          onClick={() => window.open(`/uploads/kehadiran-guru/${item.foto_masuk}`, '_blank')}
-                        />
-                        <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-green-500 rounded-full flex items-center justify-center">
-                          <LogIn className="w-2 h-2 text-white" />
-                        </span>
-                      </div>
+                      <img
+                        src={`/uploads/kehadiran-guru/${item.foto_masuk}`}
+                        alt="Foto masuk"
+                        title="Foto Masuk (data lama)"
+                        className="w-8 h-8 rounded-lg object-cover border border-green-200 cursor-pointer"
+                        onClick={() => window.open(`/uploads/kehadiran-guru/${item.foto_masuk}`, '_blank')}
+                      />
                     ) : null}
                     {item.foto_keluar ? (
-                      <div className="group relative" title="Foto Keluar">
-                        <img
-                          src={`/uploads/kehadiran-guru/${item.foto_keluar}`}
-                          alt="Foto keluar"
-                          className="w-9 h-9 rounded-lg object-cover border border-amber-200 cursor-pointer"
-                          onClick={() => window.open(`/uploads/kehadiran-guru/${item.foto_keluar}`, '_blank')}
-                        />
-                        <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-amber-500 rounded-full flex items-center justify-center">
-                          <LogOut className="w-2 h-2 text-white" />
-                        </span>
-                      </div>
+                      <img
+                        src={`/uploads/kehadiran-guru/${item.foto_keluar}`}
+                        alt="Foto keluar"
+                        title="Foto Keluar (data lama)"
+                        className="w-8 h-8 rounded-lg object-cover border border-amber-200 cursor-pointer"
+                        onClick={() => window.open(`/uploads/kehadiran-guru/${item.foto_keluar}`, '_blank')}
+                      />
                     ) : null}
-                    {!item.foto_masuk && !item.foto_keluar && (
-                      <span className="text-[10px] text-gray-400 flex items-center gap-1">
-                        <CameraOff className="w-3 h-3" /> Tanpa foto
-                      </span>
-                    )}
                   </div>
                 </div>
                 <div className="col-span-12 sm:col-span-1">
@@ -408,7 +402,7 @@ export default function KehadiranGuru() {
                   <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${statusColors[getStatusKehadiran(item)]}`}>
                     {getStatusKehadiran(item)}
                   </span>
-                  {item.foto_masuk && <span className="text-green-500"><Camera className="w-3 h-3 inline" /></span>}
+                  <VerifikasiWajah skorMasuk={item.skor_wajah_masuk} skorKeluar={item.skor_wajah_keluar} />
                   <button
                     onClick={() => openEdit(item)}
                     className="p-1 rounded-lg hover:bg-annajah-100 text-annajah-400 hover:text-annajah-600 transition-all"

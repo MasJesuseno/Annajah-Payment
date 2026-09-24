@@ -61,6 +61,9 @@ import KataBijak from './pages/KataBijak'
 import VideoTv from './pages/Video'
 import TvDisplay from './pages/TvDisplay'
 import SmaTvDisplay from './pages/SMA-TV/SmaTvDisplay'
+import InternalGate from './pages/Internal/InternalGate'
+import InternalHome from './pages/Internal/InternalHome'
+import InternalMenuPage from './pages/Internal/InternalMenuPage'
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth()
@@ -120,6 +123,9 @@ export default function App() {
       <Route path="/tv" element={<TvDisplay />} />
       <Route path="/SMA-TV" element={<SmaTvDisplay />} />
       <Route path="/sma-tv" element={<SmaTvDisplay />} />
+      {/* Panel Internal — aplikasi mobile khusus karyawan */}
+      <Route path="/internal" element={<InternalGate><InternalHome /></InternalGate>} />
+      <Route path="/internal/:menuKey" element={<InternalGate><InternalMenuPage /></InternalGate>} />
       <Route path="/" element={
         <ProtectedRoute><Layout /></ProtectedRoute>
       }>

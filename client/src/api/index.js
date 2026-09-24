@@ -23,7 +23,8 @@ api.interceptors.response.use(
     if (error.response?.status === 401 || error.response?.status === 403) {
       localStorage.removeItem('token')
       localStorage.removeItem('user')
-      window.location.href = '/login'
+      // Panel /Internal punya halaman login sendiri (mobile)
+      window.location.href = window.location.pathname.startsWith('/internal') ? '/internal' : '/login'
     }
     return Promise.reject(error)
   }
@@ -455,6 +456,11 @@ export const updateRolePermissions = (role, data) => api.put(`/role-permissions/
 // Activity Log
 export const getActivityLog = (params) => api.get('/activity-log', { params })
 export const createActivityLog = (data) => api.post('/activity-log', data)
+
+// ─── Panel /Internal (Mobile Karyawan) ───
+export const getInternalCaptcha = () => api.get('/internal/captcha')
+export const internalLogin = (data) => api.post('/internal/login', data)
+export const getInternalMe = () => api.get('/internal/me')
 
 // ─── Pengaturan TV ───
 // Agenda

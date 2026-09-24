@@ -2,9 +2,13 @@ const express = require('express');
 const app = express();
 const cors = require('cors');
 const path = require('path');
+const compression = require('compression');
 
 // Middleware
 app.use(cors());
+// Kompresi gzip — bundle JS & model face-api (±8MB) jauh lebih cepat diunduh
+// saat verifikasi wajah absen, terutama lewat jaringan mobile
+app.use(compression());
 app.use(express.json());
 
 // Serve static files (uploads seperti logo)
@@ -12,6 +16,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Routes
 app.use('/api/auth', require('./routes/auth'));
+app.use('/api/internal', require('./routes/internal'));
 app.use('/api/siswa', require('./routes/siswa'));
 app.use('/api/kelas', require('./routes/kelas'));
 app.use('/api/pembayaran', require('./routes/pembayaran'));
@@ -41,7 +46,14 @@ app.use('/api/pengaturan-tv', require('./routes/pengaturan-tv'));
 
 // Serve frontend in production
 const frontendPath = path.join(__dirname, 'client', 'dist');
-app.use(express.static(frontendPath));
+app.use(express.static(frontendPath, {
+  maxAge: '1d',
+  setHeaders: (res, filePath) => {
+    // index.html tidak boleh lama di-cache agar redeploy langsung terpakai
+    if (filePath.endsWith('.html')) res.setHeader('Cache-Control', 'no-cache');
+    // Aset ber-hash (JS/CSS) & file model boleh di-cache biar tidak diunduh ulang
+  },
+}));
 app.get('*', (req, res) => {
   if (!req.path.startsWith('/api')) {
     res.sendFile(path.join(frontendPath, 'index.html'));
