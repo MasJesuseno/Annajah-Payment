@@ -2,19 +2,25 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import {
   School, Eye, EyeOff, LogIn, RefreshCw, HelpCircle, Smartphone, ShieldCheck,
+  CheckSquare, Square,
 } from 'lucide-react'
 import { getLogoPublic, getInternalCaptcha } from '../../api'
 import toast from 'react-hot-toast'
 
+/** Kunci localStorage untuk menyimpan login & password (fitur "Ingat saya"). */
+const SAVED_LOGIN_KEY = 'internal_saved_login'
+
 /**
  * Halaman login Panel /Internal — versi mobile untuk karyawan.
  * Diawali dengan verifikasi captcha, sama seperti login utama.
+ * Menyediakan opsi simpan login & password agar tidak perlu mengetik ulang.
  */
 export default function InternalLogin() {
   const { loginInternal } = useAuth()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [remember, setRemember] = useState(false)
   const [loading, setLoading] = useState(false)
   const [logoUrl, setLogoUrl] = useState(null)
   const [logoError, setLogoError] = useState(false)
@@ -25,7 +31,31 @@ export default function InternalLogin() {
   useEffect(() => {
     loadLogo()
     fetchCaptcha()
+    loadSavedLogin()
   }, [])
+
+  // Ambil login & password tersimpan (jika sebelumnya dipilih "Ingat saya")
+  const loadSavedLogin = () => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(SAVED_LOGIN_KEY) || 'null')
+      if (saved?.username) {
+        setUsername(saved.username)
+        setPassword(saved.password || '')
+        setRemember(true)
+      }
+    } catch {
+      localStorage.removeItem(SAVED_LOGIN_KEY)
+    }
+  }
+
+  // Simpan / hapus kredensial sesuai checkbox "Ingat saya"
+  const saveLogin = () => {
+    if (remember) {
+      localStorage.setItem(SAVED_LOGIN_KEY, JSON.stringify({ username, password }))
+    } else {
+      localStorage.removeItem(SAVED_LOGIN_KEY)
+    }
+  }
 
   const loadLogo = async () => {
     try {
@@ -65,6 +95,7 @@ export default function InternalLogin() {
         token: captcha?.token,
         answer: captchaAnswer,
       })
+      saveLogin()
       toast.success('Login berhasil!')
     } catch (error) {
       const data = error.response?.data || {}
@@ -154,6 +185,21 @@ export default function InternalLogin() {
                 </button>
               </div>
             </div>
+
+            {/* Ingat login & password */}
+            <button
+              type="button"
+              onClick={() => setRemember((v) => !v)}
+              className="flex items-center gap-2 text-sm text-gray-600 hover:text-annajah-700 transition-all -mt-1"
+              aria-pressed={remember}
+            >
+              {remember ? (
+                <CheckSquare className="w-4 h-4 text-annajah-600" />
+              ) : (
+                <Square className="w-4 h-4 text-gray-400" />
+              )}
+              Simpan login & password
+            </button>
 
             {/* Captcha */}
             <div className="space-y-2">
