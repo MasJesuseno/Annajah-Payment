@@ -292,6 +292,8 @@ export const downloadExcelKehadiranGuru = (params) => api.get('/kehadiran-guru/e
 export const getKehadiranGuruTrend = (params) => api.get('/kehadiran-guru/trend', { params })
 export const getKehadiranGuruRingkasan = () => api.get('/kehadiran-guru/ringkasan')
 export const getRekapKehadiranGuru = (params) => api.get('/kehadiran-guru/rekap-bulanan', { params })
+export const getRekapKehadiranKaryawan = (params) => api.get('/kehadiran-guru/rekap-karyawan', { params })
+export const downloadExcelRekapKehadiranKaryawan = (params) => api.get('/kehadiran-guru/export-excel-rekap-karyawan', { params, responseType: 'blob' })
 export const backfillGpsKehadiranGuru = () => api.post('/kehadiran-guru/backfill-gps')
 
 export const downloadKartuPpdb = async (noPendaftaran) => {

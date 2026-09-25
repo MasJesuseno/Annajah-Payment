@@ -911,6 +911,169 @@ router.get('/rekap-bulanan', async (req, res) => {
   }
 });
 
+// ─── Rekap kehadiran karyawan (dipakai endpoint JSON & export Excel) ───
+// Filter: rentang tanggal (tanggal_awal/tanggal_akhir), nik, nama.
+// Urutan pilihan: urut (nik|nama) + arah (asc|desc), hanya nilai whitelist.
+async function getRekapKehadiranKaryawanData(db, filter = {}) {
+  const { tanggal_awal, tanggal_akhir, nik, nama, urut, arah } = filter;
+
+  // Filter tanggal & status hadir ditaruh di klausa ON agar karyawan
+  // tanpa kehadiran pada rentang tsb tetap muncul (dengan jumlah 0)
+  let joinOn = ' AND k.jam_masuk IS NOT NULL';
+  const joinParams = [];
+  if (tanggal_awal) {
+    joinOn += ' AND k.tanggal >= ?';
+    joinParams.push(tanggal_awal);
+  }
+  if (tanggal_akhir) {
+    joinOn += ' AND k.tanggal <= ?';
+    joinParams.push(tanggal_akhir);
+  }
+
+  let where = '';
+  const whereParams = [];
+  if (nik) {
+    where += ' AND g.nik LIKE ?';
+    whereParams.push(`%${nik}%`);
+  }
+  if (nama) {
+    where += ' AND g.nama LIKE ?';
+    whereParams.push(`%${nama}%`);
+  }
+
+  const kolomUrut = String(urut || '').toLowerCase() === 'nik' ? 'g.nik' : 'g.nama';
+  const arahUrut = String(arah || '').toLowerCase() === 'desc' ? 'DESC' : 'ASC';
+  const orderBy = `${kolomUrut} ${arahUrut}, g.nama ASC`;
+
+  const [rows] = await db.execute(`
+    SELECT
+      g.id,
+      g.nik,
+      g.nama,
+      COUNT(k.id) AS jumlah_kehadiran,
+      SEC_TO_TIME(AVG(TIME_TO_SEC(k.jam_masuk))) AS rata_rata_jam_masuk,
+      SEC_TO_TIME(AVG(TIME_TO_SEC(k.jam_keluar))) AS rata_rata_jam_keluar
+    FROM guru g
+    LEFT JOIN kehadiran_guru k ON k.id_guru = g.id${joinOn}
+    WHERE 1=1${where}
+    GROUP BY g.id, g.nik, g.nama
+    ORDER BY ${orderBy}
+  `, [...joinParams, ...whereParams]);
+
+  // mysql2 bisa mengembalikan TIME sebagai string 'HH:MM:SS' atau object Date
+  const formatJam = (value) => {
+    if (value === null || value === undefined || value === '') return null;
+    if (value instanceof Date) {
+      return `${String(value.getUTCHours()).padStart(2, '0')}:${String(value.getUTCMinutes()).padStart(2, '0')}`;
+    }
+    return String(value).slice(0, 5);
+  };
+
+  return rows.map((row) => ({
+    id: row.id,
+    nik: row.nik || null,
+    nama: row.nama,
+    jumlah_kehadiran: Number(row.jumlah_kehadiran) || 0,
+    rata_rata_jam_masuk: formatJam(row.rata_rata_jam_masuk),
+    rata_rata_jam_keluar: formatJam(row.rata_rata_jam_keluar),
+  }));
+}
+
+// GET /api/kehadiran-guru/rekap-karyawan — Rekap per karyawan:
+// NIK, nama, jumlah kehadiran, rata-rata jam masuk, rata-rata jam keluar.
+// Query: tanggal_awal, tanggal_akhir (rentang tanggal), nik, nama,
+//        urut (nik|nama), arah (asc|desc) — urutan data pilihan
+router.get('/rekap-karyawan', async (req, res) => {
+  try {
+    const db = await getDatabase();
+    const { tanggal_awal, tanggal_akhir, nik, nama, urut, arah } = req.query;
+
+    const data = await getRekapKehadiranKaryawanData(db, req.query);
+
+    res.json({
+      data,
+      total: data.length,
+      filter: {
+        tanggal_awal: tanggal_awal || null,
+        tanggal_akhir: tanggal_akhir || null,
+        nik: nik || null,
+        nama: nama || null,
+        urut: String(urut || '').toLowerCase() === 'nik' ? 'nik' : 'nama',
+        arah: String(arah || '').toLowerCase() === 'desc' ? 'desc' : 'asc',
+      },
+    });
+  } catch (error) {
+    handleError(error, req, res, 'Gagal memuat rekap kehadiran karyawan');
+  }
+});
+
+// GET /api/kehadiran-guru/export-excel-rekap-karyawan — Export rekap kehadiran karyawan ke Excel
+// Query sama dengan /rekap-karyawan (rentang tanggal, nik, nama, urut, arah)
+router.get('/export-excel-rekap-karyawan', async (req, res) => {
+  try {
+    const db = await getDatabase();
+    const { tanggal_awal, tanggal_akhir } = req.query;
+
+    const data = await getRekapKehadiranKaryawanData(db, req.query);
+
+    const ExcelJS = require('exceljs');
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet('Rekap Kehadiran Karyawan');
+
+    const headers = ['No', 'NIK', 'Nama Karyawan', 'Jumlah Kehadiran', 'Rata-rata Jam Masuk', 'Rata-rata Jam Keluar'];
+    const colWidths = [6, 18, 30, 18, 20, 20];
+    sheet.columns = headers.map((h, i) => ({
+      header: h,
+      key: h.toLowerCase().replace(/\s+/g, '_'),
+      width: colWidths[i],
+    }));
+
+    // Style header
+    const headerRow = sheet.getRow(1);
+    headerRow.height = 30;
+    headerRow.eachCell((cell) => {
+      cell.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF15803D' } };
+      cell.alignment = { vertical: 'middle', horizontal: 'center' };
+      cell.border = {
+        top: { style: 'thin' }, left: { style: 'thin' },
+        bottom: { style: 'thin' }, right: { style: 'thin' },
+      };
+    });
+
+    data.forEach((row, idx) => {
+      const r = sheet.addRow([
+        idx + 1,
+        row.nik || '-',
+        row.nama,
+        row.jumlah_kehadiran,
+        row.rata_rata_jam_masuk || '-',
+        row.rata_rata_jam_keluar || '-',
+      ]);
+      r.height = 22;
+      r.eachCell((cell, colIdx) => {
+        cell.border = {
+          top: { style: 'thin' }, left: { style: 'thin' },
+          bottom: { style: 'thin' }, right: { style: 'thin' },
+        };
+        const centerCols = [1, 4, 5, 6];
+        cell.alignment = { vertical: 'middle', horizontal: centerCols.includes(colIdx) ? 'center' : 'left' };
+        if (idx % 2 === 1) {
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF0FDF4' } };
+        }
+      });
+    });
+
+    const filename = `rekap_kehadiran_karyawan_${tanggal_awal || 'all'}_${tanggal_akhir || 'all'}.xlsx`;
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    handleError(error, req, res, 'Gagal export Excel rekap kehadiran karyawan');
+  }
+});
+
 // POST /api/kehadiran-guru/backfill-gps — Reverse geocode existing GPS coordinates (admin only)
 router.post('/backfill-gps', async (req, res) => {
   try {
